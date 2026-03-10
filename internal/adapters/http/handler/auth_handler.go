@@ -10,23 +10,27 @@ import (
 	"github.com/reflect-homini/stora/internal/core/otel"
 	"github.com/reflect-homini/stora/internal/domain/appconstant"
 	"github.com/reflect-homini/stora/internal/domain/auth"
+	"github.com/reflect-homini/stora/internal/domain/user"
 )
 
 type AuthHandler struct {
 	authService    auth.Service
 	oAuthService   auth.OAuthService
 	sessionService auth.SessionService
+	userService    user.Service
 }
 
 func NewAuthHandler(
 	authService auth.Service,
 	oAuthService auth.OAuthService,
 	sessionService auth.SessionService,
+	userService user.Service,
 ) *AuthHandler {
 	return &AuthHandler{
 		authService,
 		oAuthService,
 		sessionService,
+		userService,
 	}
 }
 
@@ -151,5 +155,16 @@ func (ah *AuthHandler) HandleLogout() gin.HandlerFunc {
 		}
 
 		return nil, ah.authService.Logout(ctx.Request.Context(), sessionID)
+	})
+}
+
+func (ah *AuthHandler) HandleMe() gin.HandlerFunc {
+	return server.Handler("AuthHandler.HandleMe", http.StatusOK, func(ctx *gin.Context) (any, error) {
+		userID, err := getUserID(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		return ah.userService.Me(ctx.Request.Context(), userID)
 	})
 }

@@ -12,5 +12,6 @@ type NewUserRequest struct {
 
 type UserResponse struct {
 	dto.BaseDTO
-	Email string `json:"email"`
+	Email   string          `json:"email"`
+	Profile ProfileResponse `json:"profile"`
 }

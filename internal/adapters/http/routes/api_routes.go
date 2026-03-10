@@ -28,6 +28,7 @@ func RegisterAPIRoutes(router *gin.Engine, handlers *handler.Handlers, authMiddl
 			protectedRoutes := v1.Group("/", authMiddleware)
 			{
 				protectedRoutes.DELETE("/auth/logout", handlers.Auth.HandleLogout())
+				protectedRoutes.GET("/me", handlers.Auth.HandleMe())
 			}
 		}
 	}

@@ -13,9 +13,13 @@ import (
 	"github.com/itsLeonB/ungerr"
 	"github.com/reflect-homini/stora/internal/core/mail"
 	"github.com/reflect-homini/stora/internal/core/otel"
+	"github.com/reflect-homini/stora/internal/domain/mapper"
 )
 
 type Service interface {
+	// Public
+	Me(ctx context.Context, id uuid.UUID) (UserResponse, error)
+
 	// Internal
 	GetByID(ctx context.Context, id uuid.UUID) (User, error)
 	FindByEmail(ctx context.Context, email string) (User, error)
@@ -197,6 +201,27 @@ func (us *userServiceImpl) GetByID(ctx context.Context, id uuid.UUID) (User, err
 	spec.Model.ID = id
 	spec.PreloadRelations = []string{"Profile"}
 	return us.getBySpec(ctx, spec)
+}
+
+func (us *userServiceImpl) Me(ctx context.Context, id uuid.UUID) (UserResponse, error) {
+	ctx, span := otel.Tracer.Start(ctx, "UserService.Me")
+	defer span.End()
+
+	user, err := us.GetByID(ctx, id)
+	if err != nil {
+		return UserResponse{}, err
+	}
+
+	return UserResponse{
+		BaseDTO: mapper.BaseToDTO(user.BaseEntity),
+		Email:   user.Email,
+		Profile: ProfileResponse{
+			BaseDTO: mapper.BaseToDTO(user.Profile.BaseEntity),
+			UserID:  user.Profile.UserID,
+			Name:    user.Profile.Name,
+			Avatar:  user.Profile.Avatar.String,
+		},
+	}, nil
 }
 
 func (us *userServiceImpl) getBySpec(ctx context.Context, spec crud.Specification[User]) (User, error) {
