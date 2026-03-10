@@ -1,0 +1,13 @@
+{
+    "configurations": [
+        {
+            "name": "stora",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "envFile": "${workspaceFolder}/.env",
+            "program": "${workspaceFolder}/cmd/http/main.go",
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
