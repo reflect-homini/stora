@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/google/uuid"
 	"github.com/itsLeonB/ginkgo/pkg/server"
 	"github.com/itsLeonB/ungerr"
@@ -64,7 +65,7 @@ func (ah *AuthHandler) HandleOAuth2Login() gin.HandlerFunc {
 
 		provider, err := ah.getProvider(ctx)
 		if err != nil {
-			_ = ctx.Error(ungerr.BadRequestError("missing oauth provider"))
+			_ = ctx.Error(err)
 			return
 		}
 
@@ -85,13 +86,14 @@ func (ah *AuthHandler) HandleOAuth2Callback() gin.HandlerFunc {
 			return nil, err
 		}
 
-		request := auth.OAuthCallbackData{
-			Provider: provider,
-			Code:     ctx.Query("code"),
-			State:    ctx.Query("state"),
+		req, err := server.BindRequest[auth.OAuthCallbackData](ctx, binding.Query)
+		if err != nil {
+			return nil, err
 		}
 
-		return ah.oAuthService.HandleOAuthCallback(ctx.Request.Context(), request)
+		req.Provider = provider
+
+		return ah.oAuthService.HandleOAuthCallback(ctx.Request.Context(), req)
 	})
 }
 

@@ -39,25 +39,25 @@ lint:
 
 test:
 	@echo "Running all tests..."
-	go test ./internal/...; \
+	go test ./internal/...;
 
 test-verbose:
 	@echo "Running all tests with verbose output..."
-	go test -v ./internal/...; \
+	go test -v ./internal/...;
 
 test-coverage:
 	@echo "Running all tests with coverage report..."
-	go test -v -coverprofile=coverage.out -covermode=atomic ./internal/...; \
+	go test -v -coverprofile=coverage.out -covermode=atomic ./internal/...;
 
 test-coverage-html:
 	@echo "Running all tests and generating HTML coverage report..."
 	go test -v -coverprofile=coverage.out ./internal/... && \
 	go tool cover -html=coverage.out -o coverage.html && \
-	echo "Coverage report generated: coverage.html"; \
+	echo "Coverage report generated: coverage.html";
 
 test-clean:
 	@echo "Cleaning test cache and running tests..."
-	go clean -testcache && go test -v ./internal/...; \
+	go clean -testcache && go test -v ./internal/...;
 
 build-all:
 	@echo "Building all programs..."

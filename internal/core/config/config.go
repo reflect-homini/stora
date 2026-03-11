@@ -57,7 +57,7 @@ func Load() error {
 	}
 
 	oAuthProviders, e := loadOAuthProviderConfig()
-	if err != nil {
+	if e != nil {
 		err = errors.Join(err, e)
 	}
 

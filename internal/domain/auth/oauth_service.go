@@ -125,6 +125,10 @@ func (as *oauthServiceImpl) getOrCreateUser(ctx context.Context, userInfo oauth.
 }
 
 func (as *oauthServiceImpl) createNewUserOAuth(ctx context.Context, userInfo oauth.UserInfo) (user.User, error) {
+	if !as.oauthProviders[userInfo.Provider].IsTrusted() {
+		return user.User{}, ungerr.Unknown("provider temporarily disabled")
+	}
+
 	usr, err := as.userSvc.FindByEmail(ctx, userInfo.Email)
 	if err != nil {
 		return user.User{}, err
@@ -141,10 +145,6 @@ func (as *oauthServiceImpl) createNewUserOAuth(ctx context.Context, userInfo oau
 		if err != nil {
 			return user.User{}, err
 		}
-	}
-
-	if !as.oauthProviders[userInfo.Provider].IsTrusted() {
-		return user.User{}, ungerr.Unknown("provider temporarily disabled")
 	}
 
 	// New oauth method

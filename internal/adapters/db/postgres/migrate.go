@@ -17,37 +17,33 @@ import (
 var migrations embed.FS
 
 func main() {
-	exitCode := 0
-	defer func() {
-		os.Exit(exitCode)
-	}()
+	os.Exit(run())
+}
 
+func run() int {
 	logger.Init("Job")
 
 	if err := config.Load(); err != nil {
 		logger.Error(err)
-		exitCode = 1
-		return
+		return 1
 	}
 
 	ctx := context.Background()
 	otelShutdown, err := otel.InitSDK(ctx, config.Global.OTel)
 	if err != nil {
-		logger.Error("failed to initialize OTel SDK: %v", err)
-		exitCode = 1
-		return
+		logger.Error(err)
+		return 1
 	}
 	defer func() {
 		if err := otelShutdown(ctx); err != nil {
-			logger.Errorf("error shutting down OTel SDK: %v", err)
+			logger.Error(err)
 		}
 	}()
 
 	dataSource, err := provider.ProvideDataSource()
 	if err != nil {
 		logger.Error(err)
-		exitCode = 1
-		return
+		return 1
 	}
 
 	goose.SetBaseFS(migrations)
@@ -55,13 +51,13 @@ func main() {
 
 	if err := goose.SetDialect("postgres"); err != nil {
 		logger.Error(err)
-		exitCode = 1
-		return
+		return 1
 	}
 
 	if err := goose.Up(dataSource.SQL, "migrations"); err != nil {
 		logger.Error(err)
-		exitCode = 1
-		return
+		return 1
 	}
+
+	return 0
 }

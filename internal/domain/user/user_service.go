@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -57,7 +58,7 @@ func (us *userServiceImpl) CreateNew(ctx context.Context, request NewUserRequest
 	var response User
 	err := us.transactor.WithinTransaction(ctx, func(ctx context.Context) error {
 		newUser := User{
-			Email:        request.Email,
+			Email:        strings.ToLower(request.Email),
 			PasswordHash: request.Password,
 			Profile: UserProfile{
 				Name: request.Name,
@@ -92,7 +93,7 @@ func (us *userServiceImpl) FindByEmail(ctx context.Context, email string) (User,
 	defer span.End()
 
 	userSpec := crud.Specification[User]{}
-	userSpec.Model.Email = email
+	userSpec.Model.Email = strings.ToLower(email)
 	userSpec.PreloadRelations = []string{"Profile"}
 	return us.userRepo.FindFirst(ctx, userSpec)
 }
@@ -146,30 +147,34 @@ func (us *userServiceImpl) ResetPassword(ctx context.Context, userID uuid.UUID, 
 	ctx, span := otel.Tracer.Start(ctx, "UserService.ResetPassword")
 	defer span.End()
 
-	spec := crud.Specification[User]{}
-	spec.Model.ID = userID
-	spec.Model.Email = email
-	spec.PreloadRelations = []string{"PasswordResetTokens"}
-	user, err := us.getBySpec(ctx, spec)
-	if err != nil {
-		return User{}, err
-	}
+	var resp User
+	err := us.transactor.WithinTransaction(ctx, func(ctx context.Context) error {
+		spec := crud.Specification[User]{}
+		spec.Model.ID = userID
+		spec.Model.Email = email
+		spec.PreloadRelations = []string{"PasswordResetTokens"}
+		user, err := us.getBySpec(ctx, spec)
+		if err != nil {
+			return err
+		}
 
-	if !us.validateToken(user.PasswordResetTokens, resetToken) {
-		return User{}, ungerr.BadRequestError("invalid or expired reset token")
-	}
+		if !us.validateToken(user.PasswordResetTokens, resetToken) {
+			return ungerr.BadRequestError("invalid or expired reset token")
+		}
 
-	user.PasswordHash = password
-	updatedUser, err := us.userRepo.Update(ctx, user)
-	if err != nil {
-		return User{}, err
-	}
+		user.PasswordHash = password
+		resp, err = us.userRepo.Update(ctx, user)
+		if err != nil {
+			return err
+		}
 
-	if err = us.passwordResetTokenRepo.DeleteMany(ctx, user.PasswordResetTokens); err != nil {
-		return User{}, err
-	}
+		if err = us.passwordResetTokenRepo.DeleteMany(ctx, user.PasswordResetTokens); err != nil {
+			return err
+		}
 
-	return updatedUser, nil
+		return nil
+	})
+	return resp, err
 }
 
 func (us *userServiceImpl) validateToken(resetTokens []PasswordResetToken, resetToken string) bool {
@@ -230,7 +235,7 @@ func (us *userServiceImpl) getBySpec(ctx context.Context, spec crud.Specificatio
 		return User{}, err
 	}
 	if user.IsZero() {
-		return User{}, ungerr.Unknown("user ID is not found")
+		return User{}, ungerr.NotFoundError("user is not found")
 	}
 	return user, nil
 }

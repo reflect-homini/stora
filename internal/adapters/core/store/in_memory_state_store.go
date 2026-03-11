@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/itsLeonB/ungerr"
+	"github.com/reflect-homini/stora/internal/core/logger"
 )
 
 type stateEntry struct {
@@ -46,7 +47,11 @@ func (vss *inMemoryStateStore) VerifyAndDelete(ctx context.Context, state string
 		return ungerr.BadRequestError("invalid state")
 	}
 
-	entry := value.(stateEntry)
+	entry, ok := value.(stateEntry)
+	if !ok {
+		logger.Errorf("state key %s is not a stateEntry. Type: %T", state, value)
+		return nil
+	}
 	if time.Now().After(entry.expiresAt) {
 		return ungerr.BadRequestError("invalid state")
 	}
@@ -75,7 +80,12 @@ func (vss *inMemoryStateStore) startCleanup() {
 func (vss *inMemoryStateStore) cleanup() {
 	now := time.Now()
 	vss.data.Range(func(key, value interface{}) bool {
-		entry := value.(stateEntry)
+		entry, ok := value.(stateEntry)
+		if !ok {
+			logger.Errorf("state key %s is not a stateEntry. Type: %T", key, value)
+			vss.data.Delete(key)
+			return true
+		}
 		if now.After(entry.expiresAt) {
 			vss.data.Delete(key)
 		}

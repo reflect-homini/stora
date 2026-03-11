@@ -32,7 +32,7 @@ func ProvideServices(
 
 	return &Services{
 		Auth:    auth.NewAuthService(jwt, repos.Transactor, user, coreSvc.Mail, appConfig.RegisterVerificationUrl, appConfig.ResetPasswordUrl, authConfig.HashCost, session),
-		OAuth:   auth.NewOAuthService(repos.Transactor, repos.OAuthAccount, coreSvc.State, user, http.DefaultClient, session),
+		OAuth:   auth.NewOAuthService(repos.Transactor, repos.OAuthAccount, coreSvc.State, user, &http.Client{Timeout: appConfig.Timeout}, session),
 		Session: session,
 
 		User: user,

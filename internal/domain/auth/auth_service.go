@@ -10,6 +10,7 @@ import (
 	"github.com/itsLeonB/go-crud"
 	"github.com/itsLeonB/sekure"
 	"github.com/itsLeonB/ungerr"
+	"github.com/reflect-homini/stora/internal/core/logger"
 	"github.com/reflect-homini/stora/internal/core/mail"
 	"github.com/reflect-homini/stora/internal/core/otel"
 	"github.com/reflect-homini/stora/internal/core/util"
@@ -206,6 +207,7 @@ func (as *authServiceImpl) VerifyToken(ctx context.Context, token string) (bool,
 
 	session, err := as.sessionSvc.GetByID(ctx, sessionID)
 	if err != nil {
+		logger.Error(err)
 		return false, nil, ungerr.UnauthorizedError("session is not found")
 	}
 

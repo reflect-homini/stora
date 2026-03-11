@@ -4,11 +4,11 @@ import (
 	"context"
 	"os"
 
+	_ "github.com/joho/godotenv/autoload"
 	"github.com/reflect-homini/stora/internal/adapters/http"
 	"github.com/reflect-homini/stora/internal/core/config"
 	"github.com/reflect-homini/stora/internal/core/logger"
 	"github.com/reflect-homini/stora/internal/core/otel"
-	_ "github.com/joho/godotenv/autoload"
 )
 
 func main() {
@@ -38,13 +38,13 @@ func main() {
 		}
 	}()
 
-	srv, _, err := http.Setup(*config.Global)
+	srv, shutdownFunc, err := http.Setup(*config.Global)
 	if err != nil {
 		logger.Error(err)
 		exitCode = 1
 		return
 	}
-	// defer shutdownFunc()
+	defer shutdownFunc()
 
 	if err := srv.ListenAndServe(ctx); err != nil {
 		logger.Error(err)

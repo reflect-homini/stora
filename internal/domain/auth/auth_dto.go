@@ -36,9 +36,9 @@ type ResetPasswordRequest struct {
 }
 
 type OAuthCallbackData struct {
-	Provider string `validate:"required,min=1"`
-	Code     string `validate:"required,min=1"`
-	State    string `validate:"required,min=1"`
+	Provider string `form:"-"`
+	Code     string `form:"code" binding:"required,min=1"`
+	State    string `form:"state" binding:"required,min=1"`
 }
 
 func NewTokenResp(token, refreshToken string) TokenResponse {

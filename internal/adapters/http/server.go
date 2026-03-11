@@ -31,6 +31,7 @@ func Setup(configs config.Config) (*httpserver.Server, func(), error) {
 
 	skipPaths := []string{"/ping", "/livez", "/readyz", "/metrics"}
 	if err := setupSentinel(r, skipPaths, zerologger); err != nil {
+		shutdownFunc()
 		return nil, nil, err
 	}
 
