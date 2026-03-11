@@ -6,6 +6,7 @@ import (
 	"github.com/itsLeonB/sekure"
 	"github.com/reflect-homini/stora/internal/core/config"
 	"github.com/reflect-homini/stora/internal/domain/auth"
+	"github.com/reflect-homini/stora/internal/domain/project"
 	"github.com/reflect-homini/stora/internal/domain/user"
 )
 
@@ -17,6 +18,9 @@ type Services struct {
 
 	// Users
 	User user.Service
+
+	// Projects
+	Project project.Service
 }
 
 func ProvideServices(
@@ -36,5 +40,7 @@ func ProvideServices(
 		Session: session,
 
 		User: user,
+
+		Project: project.NewService(repos.Project),
 	}
 }

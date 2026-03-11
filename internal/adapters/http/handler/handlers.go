@@ -9,12 +9,14 @@ import (
 )
 
 type Handlers struct {
-	Auth *AuthHandler
+	Auth    *AuthHandler
+	Project *ProjectHandler
 }
 
 func ProvideHandlers(services *provider.Services) *Handlers {
 	return &Handlers{
 		NewAuthHandler(services.Auth, services.OAuth, services.Session, services.User),
+		&ProjectHandler{services.Project},
 	}
 }
 

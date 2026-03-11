@@ -64,11 +64,12 @@ Fields:
 **Headers**: `Content-Type: application/json`
 
 **Body**:
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| email | string | yes | User email address (min length 3) |
-| password | string | yes | User password |
-| passwordConfirmation | string | yes | Must match password |
+
+| Field                | Type   | Required | Description                       |
+| -------------------- | ------ | -------- | --------------------------------- |
+| email                | string | yes      | User email address (min length 3) |
+| password             | string | yes      | User password                     |
+| passwordConfirmation | string | yes      | Must match password               |
 
 Example:
 
@@ -103,10 +104,11 @@ Example:
 **Headers**: `Content-Type: application/json`
 
 **Body**:
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| email | string | yes | User email address |
-| password | string | yes | User password |
+
+| Field    | Type   | Required | Description        |
+| -------- | ------ | -------- | ------------------ |
+| email    | string | yes      | User email address |
+| password | string | yes      | User password      |
 
 Example:
 
@@ -142,9 +144,10 @@ Example:
 **Headers**: `Content-Type: application/json`
 
 **Body**:
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| refreshToken | string | yes | Valid refresh token |
+
+| Field        | Type   | Required | Description         |
+| ------------ | ------ | -------- | ------------------- |
+| refreshToken | string | yes      | Valid refresh token |
 
 #### Response
 
@@ -224,9 +227,10 @@ Example:
 **Headers**: `Content-Type: application/json`
 
 **Body**:
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| email | string | yes | User email address |
+
+| Field | Type   | Required | Description        |
+| ----- | ------ | -------- | ------------------ |
+| email | string | yes      | User email address |
 
 #### Response
 
@@ -243,11 +247,12 @@ Example:
 **Headers**: `Content-Type: application/json`
 
 **Body**:
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| token | string | yes | Reset token from email |
-| password | string | yes | New password |
-| passwordConfirmation | string | yes | Must match password |
+
+| Field                | Type   | Required | Description            |
+| -------------------- | ------ | -------- | ---------------------- |
+| token                | string | yes      | Reset token from email |
+| password             | string | yes      | New password           |
+| passwordConfirmation | string | yes      | Must match password    |
 
 #### Response
 
@@ -300,6 +305,108 @@ Example:
 }
 ```
 
+---
+
+### Create Project
+
+#### Request
+
+**Method**: `POST`
+**Path**: `/api/v1/projects`
+**Headers**:
+
+- `Authorization: Bearer <token>`
+- `Content-Type: application/json`
+
+**Body**:
+
+| Field       | Type   | Required | Description                 |
+| ----------- | ------ | -------- | --------------------------- |
+| name        | string | yes      | Project name (min length 3) |
+| description | string | no       | Project description         |
+
+Example:
+
+```json
+{
+  "name": "My New Project",
+  "description": "A description of the project"
+}
+```
+
+#### Response
+
+**Status**: `201 Created`
+
+```json
+{
+  "data": {
+    "id": "uuid-here",
+    "createdAt": "2026-03-11T00:00:00Z",
+    "updatedAt": "2026-03-11T00:00:00Z",
+    "userId": "uuid-here",
+    "name": "My New Project",
+    "description": "A description of the project"
+  }
+}
+```
+
+---
+
+### Get All Projects
+
+#### Request
+
+**Method**: `GET`  
+**Path**: `/api/v1/projects`  
+**Headers**: `Authorization: Bearer <token>`
+
+#### Response
+
+**Status**: `200 OK`
+
+```json
+{
+  "data": [
+    {
+      "id": "uuid-here",
+      "createdAt": "2026-03-11T00:00:00Z",
+      "updatedAt": "2026-03-11T00:00:00Z",
+      "userId": "uuid-here",
+      "name": "My New Project",
+      "description": "A description of the project"
+    }
+  ]
+}
+```
+
+---
+
+### Get Project By ID
+
+#### Request
+
+**Method**: `GET`  
+**Path**: `/api/v1/projects/:projectID`  
+**Headers**: `Authorization: Bearer <token>`
+
+#### Response
+
+**Status**: `200 OK`
+
+```json
+{
+  "data": {
+    "id": "uuid-here",
+    "createdAt": "2026-03-11T00:00:00Z",
+    "updatedAt": "2026-03-11T00:00:00Z",
+    "userId": "uuid-here",
+    "name": "My New Project",
+    "description": "A description of the project"
+  }
+}
+```
+
 ## Data Models
 
 ### BaseDTO
@@ -326,6 +433,17 @@ Example:
 | userId | string (UUID) | Associated User ID |
 | name   | string        | User display name  |
 | avatar | string        | Avatar URL         |
+
+### ProjectResponse
+
+| Field       | Type             | Description           |
+| ----------- | ---------------- | --------------------- |
+| id          | string (UUID)    | Unique project ID     |
+| createdAt   | string (ISO8601) | Creation timestamp    |
+| updatedAt   | string (ISO8601) | Last update timestamp |
+| userId      | string (UUID)    | Owner's User ID       |
+| name        | string           | Project name          |
+| description | string           | Project description   |
 
 ### Pagination
 
