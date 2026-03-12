@@ -35,7 +35,7 @@ func RegisterAPIRoutes(router *gin.Engine, handlers *handler.Handlers, authMiddl
 					projectRoutes.POST("", handlers.Project.HandleCreate())
 					projectRoutes.GET("", handlers.Project.HandleGetAll())
 					projectRoutes.GET("/:"+string(appconstant.ContextProjectID), handlers.Project.HandleGetByID())
-					projectRoutes.POST("/:"+string(appconstant.ContextProjectID)+"/entries", handlers.Entry.HandleCreate())
+					projectRoutes.POST("/:"+string(appconstant.ContextProjectID)+"/entries", handlers.Project.HandleAddEntry())
 				}
 			}
 		}

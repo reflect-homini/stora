@@ -346,7 +346,9 @@ Example:
     "updatedAt": "2026-03-11T00:00:00Z",
     "userId": "uuid-here",
     "name": "My New Project",
-    "description": "A description of the project"
+    "description": "A description of the project",
+    "lastInteractedAt": "2026-03-11T00:00:00Z",
+    "entries": []
   }
 }
 ```
@@ -374,7 +376,9 @@ Example:
       "updatedAt": "2026-03-11T00:00:00Z",
       "userId": "uuid-here",
       "name": "My New Project",
-      "description": "A description of the project"
+      "description": "A description of the project",
+      "lastInteractedAt": "2026-03-11T00:00:00Z",
+      "entries": []
     }
   ]
 }
@@ -402,7 +406,60 @@ Example:
     "updatedAt": "2026-03-11T00:00:00Z",
     "userId": "uuid-here",
     "name": "My New Project",
-    "description": "A description of the project"
+    "description": "A description of the project",
+    "lastInteractedAt": "2026-03-11T00:00:00Z",
+    "entries": [
+      {
+        "id": "uuid-here",
+        "createdAt": "2026-03-11T00:00:00Z",
+        "updatedAt": "2026-03-11T00:00:00Z",
+        "projectId": "uuid-here",
+        "content": "Entry content here"
+      }
+    ]
+  }
+}
+```
+
+---
+
+### Create Entry
+
+#### Request
+
+**Method**: `POST`
+**Path**: `/api/v1/projects/:projectID/entries`
+**Headers**:
+
+- `Authorization: Bearer <token>`
+- `Content-Type: application/json`
+
+**Body**:
+
+| Field   | Type   | Required | Description                  |
+| ------- | ------ | -------- | ---------------------------- |
+| content | string | yes      | Entry content (min length 3) |
+
+Example:
+
+```json
+{
+  "content": "A new entry for the project"
+}
+```
+
+#### Response
+
+**Status**: `201 Created`
+
+```json
+{
+  "data": {
+    "id": "uuid-here",
+    "createdAt": "2026-03-11T00:00:00Z",
+    "updatedAt": "2026-03-11T00:00:00Z",
+    "projectId": "uuid-here",
+    "content": "A new entry for the project"
   }
 }
 ```
@@ -436,14 +493,26 @@ Example:
 
 ### ProjectResponse
 
-| Field       | Type             | Description           |
-| ----------- | ---------------- | --------------------- |
-| id          | string (UUID)    | Unique project ID     |
-| createdAt   | string (ISO8601) | Creation timestamp    |
-| updatedAt   | string (ISO8601) | Last update timestamp |
-| userId      | string (UUID)    | Owner's User ID       |
-| name        | string           | Project name          |
-| description | string           | Project description   |
+| Field            | Type             | Description                    |
+| ---------------- | ---------------- | ------------------------------ |
+| id               | string (UUID)    | Unique project ID              |
+| createdAt        | string (ISO8601) | Creation timestamp             |
+| updatedAt        | string (ISO8601) | Last update timestamp          |
+| userId           | string (UUID)    | Owner's User ID                |
+| name             | string           | Project name                   |
+| description      | string           | Project description            |
+| lastInteractedAt | string (ISO8601) | Last interaction timestamp     |
+| entries          | EntryResponse[]  | List of entries in the project |
+
+### EntryResponse
+
+| Field     | Type             | Description           |
+| --------- | ---------------- | --------------------- |
+| id        | string (UUID)    | Unique entry ID       |
+| createdAt | string (ISO8601) | Creation timestamp    |
+| updatedAt | string (ISO8601) | Last update timestamp |
+| projectId | string (UUID)    | Associated Project ID |
+| content   | string           | Entry content         |
 
 ### Pagination
 

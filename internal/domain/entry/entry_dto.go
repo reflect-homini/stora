@@ -6,6 +6,7 @@ import (
 )
 
 type NewEntryRequest struct {
+	UserID    uuid.UUID `json:"-"`
 	ProjectID uuid.UUID `json:"-"`
 	Content   string    `json:"content" binding:"required,min=3"`
 }

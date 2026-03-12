@@ -8,10 +8,11 @@ import (
 
 func projectToResponse(p Project) ProjectResponse {
 	return ProjectResponse{
-		BaseDTO:     mapper.BaseToDTO(p.BaseEntity),
-		UserID:      p.UserID,
-		Name:        p.Name,
-		Description: p.Description.String,
+		BaseDTO:          mapper.BaseToDTO(p.BaseEntity),
+		UserID:           p.UserID,
+		Name:             p.Name,
+		Description:      p.Description.String,
+		LastInteractedAt: p.LastInteractedAt,
 
 		// Relations
 		Entries: ezutil.MapSlice(p.Entries, entry.EntryToResponse),
