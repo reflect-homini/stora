@@ -8,8 +8,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/itsLeonB/ginkgo/pkg/server"
 	"github.com/itsLeonB/ungerr"
+	"github.com/reflect-homini/stora/internal/appconstant"
 	"github.com/reflect-homini/stora/internal/core/otel"
-	"github.com/reflect-homini/stora/internal/domain/appconstant"
 	"github.com/reflect-homini/stora/internal/domain/auth"
 	"github.com/reflect-homini/stora/internal/domain/user"
 )

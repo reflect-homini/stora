@@ -18,18 +18,23 @@ type Service interface {
 	GetAll(ctx context.Context, userID uuid.UUID) ([]ProjectResponse, error)
 	GetByID(ctx context.Context, id, userID uuid.UUID) (ProjectResponse, error)
 	AddEntry(ctx context.Context, req entry.NewEntryRequest) (entry.EntryResponse, error)
+	UpdateEntry(ctx context.Context, req entry.UpdateEntryRequest) (entry.EntryResponse, error)
+	DeleteEntry(ctx context.Context, req entry.DeleteEntryRequest) error
 }
 
 type service struct {
-	repo     crud.Repository[Project]
-	entrySvc entry.Service
+	transactor crud.Transactor
+	repo       crud.Repository[Project]
+	entrySvc   entry.Service
 }
 
 func NewService(
+	transactor crud.Transactor,
 	repo crud.Repository[Project],
 	entrySvc entry.Service,
 ) *service {
 	return &service{
+		transactor,
 		repo,
 		entrySvc,
 	}
@@ -94,14 +99,57 @@ func (s *service) AddEntry(ctx context.Context, req entry.NewEntryRequest) (entr
 	ctx, span := otel.Tracer.Start(ctx, "ProjectService.AddEntry")
 	defer span.End()
 
-	spec := crud.Specification[Project]{}
-	spec.Model.ID = req.ProjectID
-	spec.Model.UserID = req.UserID
-	if _, err := s.getBySpec(ctx, spec); err != nil {
-		return entry.EntryResponse{}, err
-	}
+	var resp entry.EntryResponse
+	err := s.transactor.WithinTransaction(ctx, func(ctx context.Context) error {
+		err := s.ensureUserOwned(ctx, req.UserID, req.ProjectID)
+		if err != nil {
+			return err
+		}
 
-	return s.entrySvc.Create(ctx, req)
+		resp, err = s.entrySvc.Create(ctx, req)
+		return err
+	})
+	return resp, err
+}
+
+func (s *service) UpdateEntry(ctx context.Context, req entry.UpdateEntryRequest) (entry.EntryResponse, error) {
+	ctx, span := otel.Tracer.Start(ctx, "ProjectService.UpdateEntry")
+	defer span.End()
+
+	var resp entry.EntryResponse
+	err := s.transactor.WithinTransaction(ctx, func(ctx context.Context) error {
+		err := s.ensureUserOwned(ctx, req.UserID, req.ProjectID)
+		if err != nil {
+			return err
+		}
+
+		resp, err = s.entrySvc.Update(ctx, req)
+		return err
+	})
+	return resp, err
+}
+
+func (s *service) DeleteEntry(ctx context.Context, req entry.DeleteEntryRequest) error {
+	ctx, span := otel.Tracer.Start(ctx, "ProjectService.DeleteEntry")
+	defer span.End()
+
+	return s.transactor.WithinTransaction(ctx, func(ctx context.Context) error {
+		err := s.ensureUserOwned(ctx, req.UserID, req.ProjectID)
+		if err != nil {
+			return err
+		}
+
+		return s.entrySvc.Delete(ctx, req)
+	})
+}
+
+func (s *service) ensureUserOwned(ctx context.Context, userID, projectID uuid.UUID) error {
+	spec := crud.Specification[Project]{}
+	spec.Model.ID = projectID
+	spec.Model.UserID = userID
+	spec.ForUpdate = true
+	_, err := s.getBySpec(ctx, spec)
+	return err
 }
 
 func (s *service) getBySpec(ctx context.Context, spec crud.Specification[Project]) (Project, error) {

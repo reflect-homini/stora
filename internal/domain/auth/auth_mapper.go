@@ -1,7 +1,7 @@
 package auth
 
 import (
-	"github.com/reflect-homini/stora/internal/domain/appconstant"
+	"github.com/reflect-homini/stora/internal/appconstant"
 )
 
 func sessionToAuthData(session Session) map[string]any {

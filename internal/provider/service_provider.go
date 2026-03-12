@@ -36,7 +36,7 @@ func ProvideServices(
 	user := user.NewUserService(repos.Transactor, repos.User, repos.PasswordResetToken, coreSvc.Mail)
 	session := auth.NewSessionService(jwt, user, repos.Transactor, repos.Session, repos.RefreshToken)
 
-	entrySvc := entry.NewService(repos.Entry)
+	entrySvc := entry.NewService(repos.Transactor, repos.Entry)
 
 	return &Services{
 		Auth:    auth.NewAuthService(jwt, repos.Transactor, user, coreSvc.Mail, appConfig.RegisterVerificationUrl, appConfig.ResetPasswordUrl, authConfig.HashCost, session),
@@ -45,7 +45,7 @@ func ProvideServices(
 
 		User: user,
 
-		Project: project.NewService(repos.Project, entrySvc),
+		Project: project.NewService(repos.Transactor, repos.Project, entrySvc),
 		Entry:   entrySvc,
 	}
 }

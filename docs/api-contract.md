@@ -464,6 +464,65 @@ Example:
 }
 ```
 
+---
+
+### Update Entry
+
+#### Request
+
+**Method**: `PUT`
+**Path**: `/api/v1/projects/:projectID/entries/:entryID`
+**Headers**:
+
+- `Authorization: Bearer <token>`
+- `Content-Type: application/json`
+
+**Body**:
+
+| Field   | Type   | Required | Description                  |
+| ------- | ------ | -------- | ---------------------------- |
+| content | string | yes      | Entry content (min length 3) |
+
+Example:
+
+```json
+{
+  "content": "Updated entry content"
+}
+```
+
+#### Response
+
+**Status**: `200 OK`
+
+```json
+{
+  "data": {
+    "id": "uuid-here",
+    "createdAt": "2026-03-11T00:00:00Z",
+    "updatedAt": "2026-03-11T00:00:00Z",
+    "projectId": "uuid-here",
+    "content": "Updated entry content"
+  }
+}
+```
+
+---
+
+### Delete Entry
+
+#### Request
+
+**Method**: `DELETE`
+**Path**: `/api/v1/projects/:projectID/entries/:entryID`
+**Headers**:
+
+- `Authorization: Bearer <token>`
+
+#### Response
+
+**Status**: `204 No Content`
+
 ## Data Models
 
 ### BaseDTO

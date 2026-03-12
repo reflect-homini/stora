@@ -5,7 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/reflect-homini/stora/internal/adapters/http/handler"
-	"github.com/reflect-homini/stora/internal/domain/appconstant"
+	"github.com/reflect-homini/stora/internal/appconstant"
 )
 
 func RegisterAPIRoutes(router *gin.Engine, handlers *handler.Handlers, authMiddleware gin.HandlerFunc) {
@@ -34,8 +34,18 @@ func RegisterAPIRoutes(router *gin.Engine, handlers *handler.Handlers, authMiddl
 				{
 					projectRoutes.POST("", handlers.Project.HandleCreate())
 					projectRoutes.GET("", handlers.Project.HandleGetAll())
-					projectRoutes.GET("/:"+string(appconstant.ContextProjectID), handlers.Project.HandleGetByID())
-					projectRoutes.POST("/:"+string(appconstant.ContextProjectID)+"/entries", handlers.Project.HandleAddEntry())
+
+					projectDetailRoutes := projectRoutes.Group("/:" + string(appconstant.ContextProjectID))
+					{
+						projectDetailRoutes.GET("", handlers.Project.HandleGetByID())
+
+						entryRoutes := projectDetailRoutes.Group("/entries")
+						{
+							entryRoutes.POST("", handlers.Project.HandleAddEntry())
+							entryRoutes.PUT("/:"+string(appconstant.ContextEntryID), handlers.Project.HandleUpdateEntry())
+							entryRoutes.DELETE("/:"+string(appconstant.ContextEntryID), handlers.Project.HandleDeleteEntry())
+						}
+					}
 				}
 			}
 		}
