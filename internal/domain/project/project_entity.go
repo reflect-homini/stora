@@ -5,6 +5,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/itsLeonB/go-crud"
+	"github.com/reflect-homini/stora/internal/domain/entry"
 )
 
 type Project struct {
@@ -12,4 +13,7 @@ type Project struct {
 	UserID      uuid.UUID
 	Name        string
 	Description sql.NullString
+
+	// Relations
+	Entries []entry.Entry
 }

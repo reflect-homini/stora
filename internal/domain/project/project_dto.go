@@ -3,6 +3,7 @@ package project
 import (
 	"github.com/google/uuid"
 	"github.com/reflect-homini/stora/internal/domain/dto"
+	"github.com/reflect-homini/stora/internal/domain/entry"
 )
 
 type NewProjectRequest struct {
@@ -16,4 +17,7 @@ type ProjectResponse struct {
 	UserID      uuid.UUID `json:"userId"`
 	Name        string    `json:"name"`
 	Description string    `json:"description"`
+
+	// Relations
+	Entries []entry.EntryResponse `json:"entries"`
 }

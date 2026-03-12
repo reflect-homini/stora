@@ -68,6 +68,7 @@ func (s *service) GetByID(ctx context.Context, id, userID uuid.UUID) (ProjectRes
 	spec := crud.Specification[Project]{}
 	spec.Model.ID = id
 	spec.Model.UserID = userID
+	spec.PreloadRelations = []string{"Entries"}
 	project, err := s.repo.FindFirst(ctx, spec)
 	if err != nil {
 		return ProjectResponse{}, err
