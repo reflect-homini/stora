@@ -6,6 +6,7 @@ import (
 	"github.com/itsLeonB/sekure"
 	"github.com/reflect-homini/stora/internal/core/config"
 	"github.com/reflect-homini/stora/internal/domain/auth"
+	"github.com/reflect-homini/stora/internal/domain/entry"
 	"github.com/reflect-homini/stora/internal/domain/project"
 	"github.com/reflect-homini/stora/internal/domain/user"
 )
@@ -21,6 +22,7 @@ type Services struct {
 
 	// Projects
 	Project project.Service
+	Entry   entry.Service
 }
 
 func ProvideServices(
@@ -34,6 +36,8 @@ func ProvideServices(
 	user := user.NewUserService(repos.Transactor, repos.User, repos.PasswordResetToken, coreSvc.Mail)
 	session := auth.NewSessionService(jwt, user, repos.Transactor, repos.Session, repos.RefreshToken)
 
+	entrySvc := entry.NewService(repos.Entry)
+
 	return &Services{
 		Auth:    auth.NewAuthService(jwt, repos.Transactor, user, coreSvc.Mail, appConfig.RegisterVerificationUrl, appConfig.ResetPasswordUrl, authConfig.HashCost, session),
 		OAuth:   auth.NewOAuthService(repos.Transactor, repos.OAuthAccount, coreSvc.State, user, &http.Client{Timeout: appConfig.Timeout}, session),
@@ -41,6 +45,7 @@ func ProvideServices(
 
 		User: user,
 
-		Project: project.NewService(repos.Project),
+		Project: project.NewService(repos.Project, entrySvc),
+		Entry:   entrySvc,
 	}
 }

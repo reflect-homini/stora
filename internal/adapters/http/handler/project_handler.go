@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/itsLeonB/ginkgo/pkg/server"
 	"github.com/reflect-homini/stora/internal/domain/appconstant"
+	"github.com/reflect-homini/stora/internal/domain/entry"
 	"github.com/reflect-homini/stora/internal/domain/project"
 )
 
@@ -56,5 +57,29 @@ func (ph *ProjectHandler) HandleGetByID() gin.HandlerFunc {
 		}
 
 		return ph.svc.GetByID(ctx.Request.Context(), projectID, userID)
+	})
+}
+
+func (ph *ProjectHandler) HandleAddEntry() gin.HandlerFunc {
+	return server.Handler("ProjectHandler.HandleAddEntry", http.StatusCreated, func(ctx *gin.Context) (any, error) {
+		userID, err := getUserID(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		projectID, err := server.GetRequiredPathParam[uuid.UUID](ctx, string(appconstant.ContextProjectID))
+		if err != nil {
+			return nil, err
+		}
+
+		req, err := server.BindJSON[entry.NewEntryRequest](ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		req.UserID = userID
+		req.ProjectID = projectID
+
+		return ph.svc.AddEntry(ctx.Request.Context(), req)
 	})
 }

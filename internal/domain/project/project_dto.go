@@ -1,8 +1,11 @@
 package project
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/reflect-homini/stora/internal/domain/dto"
+	"github.com/reflect-homini/stora/internal/domain/entry"
 )
 
 type NewProjectRequest struct {
@@ -13,7 +16,11 @@ type NewProjectRequest struct {
 
 type ProjectResponse struct {
 	dto.BaseDTO
-	UserID      uuid.UUID `json:"userId"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
+	UserID           uuid.UUID `json:"userId"`
+	Name             string    `json:"name"`
+	Description      string    `json:"description"`
+	LastInteractedAt time.Time `json:"lastInteractedAt"`
+
+	// Relations
+	Entries []entry.EntryResponse `json:"entries"`
 }
