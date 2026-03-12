@@ -3,6 +3,7 @@ package provider
 import (
 	"github.com/itsLeonB/go-crud"
 	"github.com/reflect-homini/stora/internal/domain/auth"
+	"github.com/reflect-homini/stora/internal/domain/project"
 	"github.com/reflect-homini/stora/internal/domain/user"
 	"gorm.io/gorm"
 )
@@ -17,6 +18,9 @@ type Repositories struct {
 	OAuthAccount       crud.Repository[auth.OAuthAccount]
 	Session            crud.Repository[auth.Session]
 	RefreshToken       crud.Repository[auth.RefreshToken]
+
+	// Projects
+	Project crud.Repository[project.Project]
 }
 
 func ProvideRepositories(db *gorm.DB) *Repositories {
@@ -29,5 +33,7 @@ func ProvideRepositories(db *gorm.DB) *Repositories {
 		OAuthAccount:       crud.NewRepository[auth.OAuthAccount](db),
 		Session:            crud.NewRepository[auth.Session](db),
 		RefreshToken:       crud.NewRepository[auth.RefreshToken](db),
+
+		Project: crud.NewRepository[project.Project](db),
 	}
 }

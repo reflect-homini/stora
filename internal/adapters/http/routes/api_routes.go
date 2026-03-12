@@ -29,6 +29,13 @@ func RegisterAPIRoutes(router *gin.Engine, handlers *handler.Handlers, authMiddl
 			{
 				protectedRoutes.DELETE("/auth/logout", handlers.Auth.HandleLogout())
 				protectedRoutes.GET("/me", handlers.Auth.HandleMe())
+
+				projectRoutes := protectedRoutes.Group("/projects")
+				{
+					projectRoutes.POST("", handlers.Project.HandleCreate())
+					projectRoutes.GET("", handlers.Project.HandleGetAll())
+					projectRoutes.GET("/:"+string(appconstant.ContextProjectID), handlers.Project.HandleGetByID())
+				}
 			}
 		}
 	}

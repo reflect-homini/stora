@@ -7,4 +7,6 @@ const (
 	ContextSessionID ctxKey = "sessionID"
 
 	ContextProvider ctxKey = "provider"
+
+	ContextProjectID ctxKey = "projectID"
 )
