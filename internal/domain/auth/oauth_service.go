@@ -1,0 +1,179 @@
+package auth
+
+import (
+	"context"
+	"crypto/rand"
+	"encoding/base64"
+	"net/http"
+	"time"
+
+	"github.com/itsLeonB/go-crud"
+	"github.com/itsLeonB/ungerr"
+	"github.com/reflect-homini/stora/internal/core/config"
+	"github.com/reflect-homini/stora/internal/core/otel"
+	"github.com/reflect-homini/stora/internal/core/store"
+	"github.com/reflect-homini/stora/internal/domain/auth/oauth"
+	"github.com/reflect-homini/stora/internal/domain/user"
+)
+
+type OAuthService interface {
+	// Public
+	GetOAuthURL(ctx context.Context, provider string) (string, error)
+	HandleOAuthCallback(ctx context.Context, data OAuthCallbackData) (TokenResponse, error)
+}
+
+type oauthServiceImpl struct {
+	transactor       crud.Transactor
+	oauthProviders   map[string]oauth.ProviderService
+	oauthAccountRepo crud.Repository[OAuthAccount]
+	stateStore       store.StateStore
+	userSvc          user.Service
+	sessionSvc       SessionService
+}
+
+func NewOAuthService(
+	transactor crud.Transactor,
+	oauthAccountRepo crud.Repository[OAuthAccount],
+	stateStore store.StateStore,
+	userSvc user.Service,
+	httpClient *http.Client,
+	sessionSvc SessionService,
+) *oauthServiceImpl {
+	return &oauthServiceImpl{
+		transactor,
+		oauth.NewOAuthProviderServices(config.Global.OAuthProviders, httpClient),
+		oauthAccountRepo,
+		stateStore,
+		userSvc,
+		sessionSvc,
+	}
+}
+
+func (as *oauthServiceImpl) GetOAuthURL(ctx context.Context, provider string) (string, error) {
+	ctx, span := otel.Tracer.Start(ctx, "OAuthService.GetOAuthURL")
+	defer span.End()
+
+	oauthProvider, ok := as.oauthProviders[provider]
+	if !ok {
+		return "", ungerr.Unknownf("unsupported oauth provider: %s", provider)
+	}
+
+	state, err := as.generateState()
+	if err != nil {
+		return "", err
+	}
+
+	url, err := oauthProvider.GetAuthCodeURL(state)
+	if err != nil {
+		return "", err
+	}
+
+	if err = as.stateStore.Store(ctx, state, 5*time.Minute); err != nil {
+		return "", err
+	}
+
+	return url, nil
+}
+
+func (as *oauthServiceImpl) HandleOAuthCallback(ctx context.Context, data OAuthCallbackData) (TokenResponse, error) {
+	ctx, span := otel.Tracer.Start(ctx, "OAuthService.HandleOAuthCallback")
+	defer span.End()
+
+	var response TokenResponse
+	err := as.transactor.WithinTransaction(ctx, func(ctx context.Context) error {
+		oauthProvider, ok := as.oauthProviders[data.Provider]
+		if !ok {
+			return ungerr.Unknownf("unsupported oauth provider: %s", data.Provider)
+		}
+
+		if err := as.stateStore.VerifyAndDelete(ctx, data.State); err != nil {
+			return err
+		}
+
+		userInfo, err := oauthProvider.HandleCallback(ctx, data.Code)
+		if err != nil {
+			return err
+		}
+
+		user, err := as.getOrCreateUser(ctx, userInfo)
+		if err != nil {
+			return err
+		}
+
+		if !user.IsVerified() {
+			if _, err = as.userSvc.Verify(ctx, user.ID, user.Email, userInfo.Name, userInfo.Avatar); err != nil {
+				return err
+			}
+		}
+
+		response, err = as.sessionSvc.CreateTokenAndSession(ctx, user)
+		return err
+	})
+
+	return response, err
+}
+
+func (as *oauthServiceImpl) getOrCreateUser(ctx context.Context, userInfo oauth.UserInfo) (user.User, error) {
+	existingOAuth, err := as.findOAuthAccount(ctx, userInfo.Provider, userInfo.ProviderID)
+	if err != nil {
+		return user.User{}, err
+	}
+	if !existingOAuth.IsZero() {
+		return existingOAuth.User, nil
+	}
+	return as.createNewUserOAuth(ctx, userInfo)
+}
+
+func (as *oauthServiceImpl) createNewUserOAuth(ctx context.Context, userInfo oauth.UserInfo) (user.User, error) {
+	if !as.oauthProviders[userInfo.Provider].IsTrusted() {
+		return user.User{}, ungerr.Unknown("provider temporarily disabled")
+	}
+
+	usr, err := as.userSvc.FindByEmail(ctx, userInfo.Email)
+	if err != nil {
+		return user.User{}, err
+	}
+	if usr.IsZero() {
+		// New user
+		newUser := user.NewUserRequest{
+			Email:     userInfo.Email,
+			Name:      userInfo.Name,
+			Avatar:    userInfo.Avatar,
+			VerifyNow: true,
+		}
+		usr, err = as.userSvc.CreateNew(ctx, newUser)
+		if err != nil {
+			return user.User{}, err
+		}
+	}
+
+	// New oauth method
+	newOAuthAccount := OAuthAccount{
+		UserID:     usr.ID,
+		Provider:   userInfo.Provider,
+		ProviderID: userInfo.ProviderID,
+		Email:      userInfo.Email,
+	}
+
+	if _, err = as.oauthAccountRepo.Insert(ctx, newOAuthAccount); err != nil {
+		return user.User{}, err
+	}
+
+	return usr, nil
+}
+
+func (as *oauthServiceImpl) findOAuthAccount(ctx context.Context, provider, providerID string) (OAuthAccount, error) {
+	oauthSpec := crud.Specification[OAuthAccount]{}
+	oauthSpec.Model.Provider = provider
+	oauthSpec.Model.ProviderID = providerID
+	oauthSpec.PreloadRelations = []string{"User"}
+	return as.oauthAccountRepo.FindFirst(ctx, oauthSpec)
+}
+
+func (as *oauthServiceImpl) generateState() (string, error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", ungerr.Wrap(err, "error generating random string")
+	}
+	return base64.URLEncoding.EncodeToString(b), nil
+}
