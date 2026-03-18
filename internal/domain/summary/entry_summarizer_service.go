@@ -3,16 +3,35 @@ package summary
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
 	"time"
 
+	"github.com/openai/openai-go/v2"
+	"github.com/openai/openai-go/v2/shared"
 	"github.com/reflect-homini/stora/internal/core/llm"
 	"github.com/reflect-homini/stora/internal/core/otel"
 	"github.com/reflect-homini/stora/internal/domain/entry"
 	"github.com/reflect-homini/stora/internal/domain/project"
 )
+
+// llmSummaryResponse matches the JSON schema enforced via the LLM response format.
+type llmSummaryResponse struct {
+	SummaryText     string          `json:"summary_text"`
+	SummaryMarkdown string          `json:"summary_markdown"`
+	InsightsJSON    llmInsightsJSON `json:"insights_json"`
+}
+
+type llmInsightsJSON struct {
+	Themes       []string `json:"themes"`
+	Achievements []string `json:"achievements"`
+	Challenges   []string `json:"challenges"`
+	Learnings    []string `json:"learnings"`
+	Skills       []string `json:"skills"`
+	Impact       []string `json:"impact"`
+}
 
 type EntrySummarizerService interface {
 	Summarize(ctx context.Context, project project.Project, entries []entry.Entry, previousSummary ProjectSummary) (ProjectSummary, error)
@@ -48,20 +67,16 @@ func (es *entrySummarizer) Summarize(ctx context.Context, project project.Projec
 		return ProjectSummary{}, err
 	}
 
-	// Basic parsing assuming LLM returns markdown and JSON in a recognizable way
-	// or we can just store the whole thing if the prompt is structured well.
-	// For now, let's assume we want to split them if possible, or just store response in Markdown.
-	// Requirements say: return summary_markdown and structured insights JSON.
-
-	summaryMarkdown, insightsJSON := es.parseResponse(response)
+	summaryText, summaryMarkdown, insightsJSON := es.parseResponse(response)
 
 	return ProjectSummary{
 		ProjectID:       project.ID,
+		SummaryText:     sql.NullString{String: summaryText, Valid: true},
 		SummaryMarkdown: sql.NullString{String: summaryMarkdown, Valid: true},
 		InsightsJSON:    sql.NullString{String: insightsJSON, Valid: true},
 		SummaryLevel:    DailyLevel,
-		StartEntryID:    entries[0].ID,
-		EndEntryID:      entries[len(entries)-1].ID,
+		StartEntryID:    entries[len(entries)-1].ID,
+		EndEntryID:      entries[0].ID,
 		EntriesCount:    len(entries),
 		TimeframeLabel:  timeframeLabel,
 		PeriodStart:     periodStart,
@@ -100,7 +115,7 @@ func (es *entrySummarizer) computeTimeframeLabel(entries []entry.Entry) string {
 	if len(dates) > 1 {
 		for i := 1; i < len(dates); i++ {
 			diff := dates[i].Sub(dates[i-1])
-			if diff > 24*time.Hour+1*time.Minute { // Allow some slack for DST/leap seconds if any, but simplified
+			if diff > 24*time.Hour+1*time.Minute {
 				isConsecutive = false
 				break
 			}
@@ -151,89 +166,113 @@ func (es *entrySummarizer) constructPrompt(project project.Project, entries []en
 	return llm.Prompt{
 		SystemMessage: es.getSystemPrompt(),
 		UserMessage:   sb.String(),
+		ResponseFormat: openai.ChatCompletionNewParamsResponseFormatUnion{
+			OfJSONSchema: &shared.ResponseFormatJSONSchemaParam{
+				JSONSchema: shared.ResponseFormatJSONSchemaJSONSchemaParam{
+					Name:        "summary_response",
+					Description: openai.String("Structured summary of work journal entries"),
+					Schema:      es.responseJSONSchema(),
+					Strict:      openai.Bool(true),
+				},
+			},
+		},
 	}
 }
 
-func (es *entrySummarizer) parseResponse(response string) (string, string) {
-	// Simple parser: look for ```json ... ```
-	jsonStart := strings.Index(response, "```json")
-	if jsonStart == -1 {
-		return response, "{}"
+// responseJSONSchema returns the JSON Schema used to enforce the LLM output structure.
+func (es *entrySummarizer) responseJSONSchema() any {
+	return map[string]any{
+		"type": "object",
+		"properties": map[string]any{
+			"summary_text": map[string]any{
+				"type":        "string",
+				"description": "A brief paragraph summarising the work done during the timeframe.",
+			},
+			"summary_markdown": map[string]any{
+				"type":        "string",
+				"description": "Markdown containing Key Themes, Progress, Challenges and Learnings sections.",
+			},
+			"insights_json": map[string]any{
+				"type":        "object",
+				"description": "Structured insights extracted from the entries.",
+				"properties": map[string]any{
+					"themes":       map[string]any{"type": "array", "items": map[string]any{"type": "string"}},
+					"achievements": map[string]any{"type": "array", "items": map[string]any{"type": "string"}},
+					"challenges":   map[string]any{"type": "array", "items": map[string]any{"type": "string"}},
+					"learnings":    map[string]any{"type": "array", "items": map[string]any{"type": "string"}},
+					"skills":       map[string]any{"type": "array", "items": map[string]any{"type": "string"}},
+					"impact":       map[string]any{"type": "array", "items": map[string]any{"type": "string"}},
+				},
+				"required":             []string{"themes", "achievements", "challenges", "learnings", "skills", "impact"},
+				"additionalProperties": false,
+			},
+		},
+		"required":             []string{"summary_text", "summary_markdown", "insights_json"},
+		"additionalProperties": false,
+	}
+}
+
+// parseResponse unmarshals the structured JSON response from the LLM.
+// Returns (summaryText, summaryMarkdown, insightsJSON).
+func (es *entrySummarizer) parseResponse(response string) (string, string, string) {
+	var parsed llmSummaryResponse
+	if err := json.Unmarshal([]byte(response), &parsed); err != nil {
+		// Fallback: treat the whole response as summary text, leave the rest empty.
+		return response, "", "{}"
 	}
 
-	summaryMarkdown := strings.TrimSpace(response[:jsonStart])
-
-	jsonEnd := strings.Index(response[jsonStart+7:], "```")
-	if jsonEnd == -1 {
-		return summaryMarkdown, "{}"
+	insightsBytes, err := json.Marshal(parsed.InsightsJSON)
+	if err != nil {
+		insightsBytes = []byte("{}")
 	}
 
-	insightsJSON := response[jsonStart+7 : jsonStart+7+jsonEnd]
-	insightsJSON = strings.TrimSpace(insightsJSON)
-
-	return summaryMarkdown, insightsJSON
+	return parsed.SummaryText, parsed.SummaryMarkdown, string(insightsBytes)
 }
 
 func (es *entrySummarizer) getSystemPrompt() string {
 	return `
 You are an assistant summarizing a user's work journal.
 
-Your job is to summarize recent entries into a concise progress summary.
+Your job is to produce a structured JSON summary of recent entries.
 
 Use the provided timeframe label to describe when the work happened.
 Do not describe inactive periods.
-
 If entries occur in separate months, mention each month explicitly rather than describing continuous work.
 
-Follow the output template exactly.
+You must return a JSON object with exactly three fields:
 
-Context:
+1. "summary_text"
+   A brief prose paragraph (2-4 sentences) describing the overall work done during the timeframe.
+   Do not use markdown here.
 
-Project name
-Project description (optional)
-Timeframe label
-Previous summary (optional)
-New entries list with timestamps
+2. "summary_markdown"
+   A markdown string containing exactly these sections (omit a section only if there is genuinely nothing to report):
 
-Output format:
+   ## Key Themes
+   Bullet list of main topics.
 
-Part 1 — Markdown Summary
+   ## Progress
+   Bullet list of concrete accomplishments.
 
-Sections must appear exactly as:
+   ## Challenges
+   Bullet list of problems or blockers.
 
-## Summary
-Brief paragraph describing work completed during the timeframe.
+   ## Learnings
+   Bullet list of insights gained.
 
-## Key Themes
-Bullet list of main topics.
+   Do NOT include a "## Summary" section — that content belongs in "summary_text".
 
-## Progress
-Bullet list of concrete accomplishments.
-
-## Challenges
-Bullet list of problems or blockers (optional).
-
-## Learnings
-Bullet list of insights gained.
-
-Part 2 — Insights JSON
-
-Valid JSON only.
-
-Structure:
-
-{
-  "themes": [],
-  "achievements": [],
-  "challenges": [],
-  "learnings": [],
-  "skills": [],
-  "impact": []
-}
+3. "insights_json"
+   An object with these keys (each an array of strings):
+   - themes
+   - achievements
+   - challenges
+   - learnings
+   - skills
+   - impact
 
 Rules:
-
-- Do not invent technologies or concepts not present in entries.
+- Do not invent technologies or concepts not present in the entries.
 - Extract high-level themes instead of specific tools when possible.
 - Achievements must describe concrete work done.
 - Skills should reflect demonstrated abilities.

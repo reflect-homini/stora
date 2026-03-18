@@ -15,16 +15,17 @@ const (
 )
 
 type ProjectSummary struct {
-	crud.BaseEntity `json:"-"`
-	ProjectID       uuid.UUID      `json:"projectId"`
-	SummaryMarkdown sql.NullString `json:"summaryMarkdown"`
-	InsightsJSON    sql.NullString `json:"insightsJson"`
-	SummaryLevel    Level          `json:"summaryLevel"`
-	StartEntryID    uuid.UUID      `json:"startEntryId"`
-	EndEntryID      uuid.UUID      `json:"endEntryId"`
-	EntriesCount    int            `json:"entriesCount"`
-	TimeframeLabel  string         `json:"timeframeLabel"`
-	PeriodStart     time.Time      `json:"periodStart"`
-	PeriodEnd       time.Time      `json:"periodEnd"`
-	GeneratedAt     time.Time      `json:"generatedAt"`
+	crud.BaseEntity
+	ProjectID       uuid.UUID
+	SummaryText     sql.NullString
+	SummaryMarkdown sql.NullString
+	InsightsJSON    sql.NullString
+	SummaryLevel    Level
+	StartEntryID    uuid.UUID
+	EndEntryID      uuid.UUID
+	EntriesCount    int
+	TimeframeLabel  string
+	PeriodStart     time.Time
+	PeriodEnd       time.Time
+	GeneratedAt     time.Time
 }

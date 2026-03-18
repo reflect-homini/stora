@@ -16,8 +16,9 @@ type LLMService interface {
 }
 
 type Prompt struct {
-	SystemMessage string
-	UserMessage   string `validate:"required,min=3"`
+	SystemMessage  string
+	UserMessage    string `validate:"required,min=3"`
+	ResponseFormat openai.ChatCompletionNewParamsResponseFormatUnion
 }
 
 type openAILLMService struct {
@@ -48,8 +49,9 @@ func (llm *openAILLMService) Prompt(ctx context.Context, p Prompt) (string, erro
 	msgs = append(msgs, openai.UserMessage(p.UserMessage))
 
 	params := openai.ChatCompletionNewParams{
-		Model:    llm.model,
-		Messages: msgs,
+		Model:          llm.model,
+		Messages:       msgs,
+		ResponseFormat: p.ResponseFormat,
 	}
 
 	response, err := llm.client.Chat.Completions.New(ctx, params)

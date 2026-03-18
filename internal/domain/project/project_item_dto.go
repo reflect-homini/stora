@@ -19,6 +19,7 @@ type ProjectItem struct {
 	Content   string    `json:"content"`
 
 	// Summaries only
-	EntriesCount int       `json:"entriesCount,omitzero"`
-	EndEntryID   uuid.UUID `json:"endEntryId,omitzero"`
+	AdditionalContent string    `json:"additionalContent,omitzero"`
+	EntriesCount      int       `json:"entriesCount,omitzero"`
+	EndEntryID        uuid.UUID `json:"endEntryId,omitzero"`
 }

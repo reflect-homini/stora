@@ -94,26 +94,34 @@ func TestConstructPrompt(t *testing.T) {
 func TestParseResponse(t *testing.T) {
 	es := &entrySummarizer{}
 
-	response := `This is a summary.
-Continued summary.
-` + "```json" + `
-{
-  "insight": "value"
+	response := `{
+  "summary_text": "Work was focused on implementing the new feature.",
+  "summary_markdown": "## Key Themes\n- Feature development\n\n## Progress\n- Completed implementation",
+  "insights_json": {
+    "themes": ["Feature development"],
+    "achievements": ["Completed implementation"],
+    "challenges": [],
+    "learnings": ["TDD helps catch edge cases early"],
+    "skills": ["Go"],
+    "impact": ["Faster delivery"]
+  }
+}`
+
+	summaryText, summaryMarkdown, insightsJSON := es.parseResponse(response)
+
+	assert.Equal(t, "Work was focused on implementing the new feature.", summaryText)
+	assert.Equal(t, "## Key Themes\n- Feature development\n\n## Progress\n- Completed implementation", summaryMarkdown)
+	assert.Contains(t, insightsJSON, "Feature development")
+	assert.Contains(t, insightsJSON, "Completed implementation")
 }
-` + "```"
 
-	summary, insights := es.parseResponse(response)
-
-	assert.Equal(t, "This is a summary.\nContinued summary.", summary)
-	assert.Equal(t, "{\n  \"insight\": \"value\"\n}", insights)
-}
-
-func TestParseResponseNoJson(t *testing.T) {
+func TestParseResponseInvalidJson(t *testing.T) {
 	es := &entrySummarizer{}
 
-	response := "Just a summary without json."
-	summary, insights := es.parseResponse(response)
+	response := "This is not valid JSON."
+	summaryText, summaryMarkdown, insightsJSON := es.parseResponse(response)
 
-	assert.Equal(t, "Just a summary without json.", summary)
-	assert.Equal(t, "{}", insights)
+	assert.Equal(t, "This is not valid JSON.", summaryText)
+	assert.Equal(t, "", summaryMarkdown)
+	assert.Equal(t, "{}", insightsJSON)
 }
