@@ -3,20 +3,22 @@ package entry
 import (
 	"context"
 
-	"github.com/itsLeonB/go-crud"
+	"github.com/google/uuid"
+	"github.com/itsLeonB/ezutil/v2"
 	"github.com/reflect-homini/stora/internal/core/otel"
 )
 
 type Service interface {
 	Create(ctx context.Context, req NewEntryRequest) (EntryResponse, error)
+	GetAfter(ctx context.Context, projectID, entryID uuid.UUID) ([]EntryResponse, error)
 }
 
-func NewService(repo crud.Repository[Entry]) *service {
+func NewService(repo Repository) *service {
 	return &service{repo}
 }
 
 type service struct {
-	repo crud.Repository[Entry]
+	repo Repository
 }
 
 func (s *service) Create(ctx context.Context, req NewEntryRequest) (EntryResponse, error) {
@@ -34,4 +36,16 @@ func (s *service) Create(ctx context.Context, req NewEntryRequest) (EntryRespons
 	}
 
 	return EntryToResponse(insertedEntry), nil
+}
+
+func (s *service) GetAfter(ctx context.Context, projectID, entryID uuid.UUID) ([]EntryResponse, error) {
+	ctx, span := otel.Tracer.Start(ctx, "EntryService.GetAfter")
+	defer span.End()
+
+	entries, err := s.repo.GetAfter(ctx, projectID, entryID, -1)
+	if err != nil {
+		return nil, err
+	}
+
+	return ezutil.MapSlice(entries, EntryToResponse), nil
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/itsLeonB/ginkgo/pkg/server"
+	"github.com/itsLeonB/ungerr"
 	"github.com/reflect-homini/stora/internal/domain/appconstant"
 	"github.com/reflect-homini/stora/internal/domain/entry"
 	"github.com/reflect-homini/stora/internal/domain/project"
@@ -17,6 +18,7 @@ type ProjectHandler struct {
 	svc        project.Service
 	summarySvc summary.ProjectSummaryService
 	detailsSvc projectdetails.Service
+	entrySvc   entry.Service
 }
 
 func (ph *ProjectHandler) HandleCreate() gin.HandlerFunc {
@@ -96,5 +98,25 @@ func (ph *ProjectHandler) HandleGenerateSummary() gin.HandlerFunc {
 		}
 
 		return ph.summarySvc.GenerateDailySummary(ctx.Request.Context(), projectID)
+	})
+}
+
+func (ph *ProjectHandler) HandleGetEntriesAfter() gin.HandlerFunc {
+	return server.Handler("ProjectHandler.HandleGetEntriesAfter", http.StatusOK, func(ctx *gin.Context) (any, error) {
+		projectID, err := server.GetRequiredPathParam[uuid.UUID](ctx, string(appconstant.ContextProjectID))
+		if err != nil {
+			return nil, err
+		}
+
+		entryID := uuid.Nil
+		entryIDStr := ctx.Query("afterEntryId")
+		if entryIDStr != "" {
+			entryID, err = uuid.Parse(entryIDStr)
+			if err != nil {
+				return nil, ungerr.Wrap(err, "error parsing entryId to uuid")
+			}
+		}
+
+		return ph.entrySvc.GetAfter(ctx.Request.Context(), projectID, entryID)
 	})
 }

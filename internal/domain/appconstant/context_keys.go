@@ -9,4 +9,5 @@ const (
 	ContextProvider ctxKey = "provider"
 
 	ContextProjectID ctxKey = "projectID"
+	ContextEntryID   ctxKey = "entryID"
 )

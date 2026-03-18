@@ -14,8 +14,11 @@ const (
 
 type ProjectItem struct {
 	dto.BaseDTO
-	ProjectID    uuid.UUID `json:"projectId"`
-	ItemType     ItemType  `json:"itemType"`
-	Content      string    `json:"content"`
-	EntriesCount int       `json:"entriesCount,omitzero"` // only available on summaries
+	ProjectID uuid.UUID `json:"projectId"`
+	ItemType  ItemType  `json:"itemType"`
+	Content   string    `json:"content"`
+
+	// Summaries only
+	EntriesCount int       `json:"entriesCount,omitzero"`
+	EndEntryID   uuid.UUID `json:"endEntryId,omitzero"`
 }

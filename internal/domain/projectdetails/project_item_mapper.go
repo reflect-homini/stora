@@ -23,5 +23,6 @@ func summaryToItem(s summary.ProjectSummary) project.ProjectItem {
 		ItemType:     project.ItemTypeSummary,
 		Content:      s.SummaryMarkdown.String,
 		EntriesCount: s.EntriesCount,
+		EndEntryID:   s.EndEntryID,
 	}
 }

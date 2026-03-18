@@ -38,7 +38,7 @@ func (s *service) GetByID(ctx context.Context, userID, projectID uuid.UUID) (pro
 	ctx, span := otel.Tracer.Start(ctx, "ProjectItemService.GetByID")
 	defer span.End()
 
-	proj, err := s.projectSvc.GetByID(ctx, userID, projectID)
+	proj, err := s.projectSvc.GetByID(ctx, projectID, userID)
 	if err != nil {
 		return project.ProjectResponse{}, err
 	}
@@ -70,12 +70,12 @@ func (s *service) getItems(ctx context.Context, projectID uuid.UUID) ([]project.
 		return nil, err
 	}
 
-	items := make([]project.ProjectItem, 0, len(summaries)+len(entries))
-	for _, summary := range summaries {
-		items = append(items, summaryToItem(summary))
-	}
+	items := make([]project.ProjectItem, 0, len(entries)+len(summaries))
 	for _, entry := range entries {
 		items = append(items, entryToItem(entry))
+	}
+	for _, summary := range summaries {
+		items = append(items, summaryToItem(summary))
 	}
 
 	return items, nil
