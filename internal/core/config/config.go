@@ -15,6 +15,7 @@ type Config struct {
 	App            App
 	Auth           Auth
 	DB             DB
+	LLM            LLM
 	Mail           Mail
 	OTel           OTel
 	Valkey         Valkey
@@ -37,6 +38,11 @@ func Load() error {
 	}
 
 	db, e := load[DB]()
+	if e != nil {
+		err = errors.Join(err, e)
+	}
+
+	llm, e := load[LLM]()
 	if e != nil {
 		err = errors.Join(err, e)
 	}
@@ -69,6 +75,7 @@ func Load() error {
 		App:            app,
 		Auth:           auth,
 		DB:             db,
+		LLM:            llm,
 		Mail:           mail,
 		OTel:           otel,
 		Valkey:         valkey,

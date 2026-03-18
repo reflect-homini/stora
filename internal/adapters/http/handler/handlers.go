@@ -16,7 +16,7 @@ type Handlers struct {
 func ProvideHandlers(services *provider.Services) *Handlers {
 	return &Handlers{
 		NewAuthHandler(services.Auth, services.OAuth, services.Session, services.User),
-		&ProjectHandler{services.Project},
+		&ProjectHandler{services.Project, services.ProjectSummary},
 	}
 }
 

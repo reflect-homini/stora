@@ -9,10 +9,12 @@ import (
 	"github.com/reflect-homini/stora/internal/domain/appconstant"
 	"github.com/reflect-homini/stora/internal/domain/entry"
 	"github.com/reflect-homini/stora/internal/domain/project"
+	"github.com/reflect-homini/stora/internal/domain/summary"
 )
 
 type ProjectHandler struct {
-	svc project.Service
+	svc        project.Service
+	summarySvc summary.ProjectSummaryService
 }
 
 func (ph *ProjectHandler) HandleCreate() gin.HandlerFunc {
@@ -81,5 +83,16 @@ func (ph *ProjectHandler) HandleAddEntry() gin.HandlerFunc {
 		req.ProjectID = projectID
 
 		return ph.svc.AddEntry(ctx.Request.Context(), req)
+	})
+}
+
+func (ph *ProjectHandler) HandleGenerateSummary() gin.HandlerFunc {
+	return server.Handler("ProjectHandler.HandleGenerateSummary", http.StatusOK, func(ctx *gin.Context) (any, error) {
+		projectID, err := server.GetRequiredPathParam[uuid.UUID](ctx, string(appconstant.ContextProjectID))
+		if err != nil {
+			return nil, err
+		}
+
+		return ph.summarySvc.GenerateDailySummary(ctx.Request.Context(), projectID)
 	})
 }
