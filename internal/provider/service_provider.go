@@ -8,6 +8,7 @@ import (
 	"github.com/reflect-homini/stora/internal/domain/auth"
 	"github.com/reflect-homini/stora/internal/domain/entry"
 	"github.com/reflect-homini/stora/internal/domain/project"
+	"github.com/reflect-homini/stora/internal/domain/projectdetails"
 	"github.com/reflect-homini/stora/internal/domain/summary"
 	"github.com/reflect-homini/stora/internal/domain/user"
 )
@@ -22,8 +23,9 @@ type Services struct {
 	User user.Service
 
 	// Projects
-	Project project.Service
-	Entry   entry.Service
+	Project        project.Service
+	Entry          entry.Service
+	ProjectDetails projectdetails.Service
 
 	// Summaries
 	ProjectSummary summary.ProjectSummaryService
@@ -41,6 +43,7 @@ func ProvideServices(
 	session := auth.NewSessionService(jwt, user, repos.Transactor, repos.Session, repos.RefreshToken)
 
 	entrySvc := entry.NewService(repos.Entry)
+	projectSvc := project.NewService(repos.Project, entrySvc)
 
 	entrySummarizer := summary.NewEntrySummarizerService(coreSvc.LLM)
 
@@ -51,8 +54,9 @@ func ProvideServices(
 
 		User: user,
 
-		Project: project.NewService(repos.Project, entrySvc),
-		Entry:   entrySvc,
+		Project:        projectSvc,
+		Entry:          entrySvc,
+		ProjectDetails: projectdetails.NewService(repos.ProjectSummary, repos.Entry, projectSvc),
 
 		ProjectSummary: summary.NewProjectSummaryService(repos.ProjectSummary, repos.Project, repos.Entry, entrySummarizer),
 	}

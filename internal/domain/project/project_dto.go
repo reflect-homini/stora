@@ -5,7 +5,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/reflect-homini/stora/internal/domain/dto"
-	"github.com/reflect-homini/stora/internal/domain/entry"
 )
 
 type NewProjectRequest struct {
@@ -22,5 +21,5 @@ type ProjectResponse struct {
 	LastInteractedAt time.Time `json:"lastInteractedAt"`
 
 	// Relations
-	Entries []entry.EntryResponse `json:"entries"`
+	Items []ProjectItem `json:"items"`
 }

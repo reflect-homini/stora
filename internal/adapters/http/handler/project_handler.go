@@ -9,12 +9,14 @@ import (
 	"github.com/reflect-homini/stora/internal/domain/appconstant"
 	"github.com/reflect-homini/stora/internal/domain/entry"
 	"github.com/reflect-homini/stora/internal/domain/project"
+	"github.com/reflect-homini/stora/internal/domain/projectdetails"
 	"github.com/reflect-homini/stora/internal/domain/summary"
 )
 
 type ProjectHandler struct {
 	svc        project.Service
 	summarySvc summary.ProjectSummaryService
+	detailsSvc projectdetails.Service
 }
 
 func (ph *ProjectHandler) HandleCreate() gin.HandlerFunc {
@@ -58,7 +60,7 @@ func (ph *ProjectHandler) HandleGetByID() gin.HandlerFunc {
 			return nil, err
 		}
 
-		return ph.svc.GetByID(ctx.Request.Context(), projectID, userID)
+		return ph.detailsSvc.GetByID(ctx.Request.Context(), userID, projectID)
 	})
 }
 
