@@ -348,7 +348,7 @@ Example:
     "name": "My New Project",
     "description": "A description of the project",
     "lastInteractedAt": "2026-03-11T00:00:00Z",
-    "entries": []
+    "items": []
   }
 }
 ```
@@ -378,7 +378,7 @@ Example:
       "name": "My New Project",
       "description": "A description of the project",
       "lastInteractedAt": "2026-03-11T00:00:00Z",
-      "entries": []
+      "items": []
     }
   ]
 }
@@ -408,13 +408,24 @@ Example:
     "name": "My New Project",
     "description": "A description of the project",
     "lastInteractedAt": "2026-03-11T00:00:00Z",
-    "entries": [
+    "items": [
       {
         "id": "uuid-here",
         "createdAt": "2026-03-11T00:00:00Z",
         "updatedAt": "2026-03-11T00:00:00Z",
         "projectId": "uuid-here",
+        "itemType": "entry",
         "content": "Entry content here"
+      },
+      {
+        "id": "uuid-here",
+        "createdAt": "2026-03-12T00:00:00Z",
+        "updatedAt": "2026-03-12T00:00:00Z",
+        "projectId": "uuid-here",
+        "itemType": "summary",
+        "content": "## Summary\nWork completed...",
+        "entriesCount": 5,
+        "endEntryId": "uuid-here"
       }
     ]
   }
@@ -464,6 +475,40 @@ Example:
 }
 ```
 
+---
+
+### Get Project Entries
+
+#### Request
+
+**Method**: `GET`
+**Path**: `/api/v1/projects/:projectID/entries`
+**Headers**: `Authorization: Bearer <token>`
+
+**Query Params**:
+
+- `afterEntryId`: (Optional) Fetch entries created after this UUID. If omitted, starts from the beginning.
+
+#### Response
+
+**Status**: `200 OK`
+
+```json
+{
+  "data": [
+    {
+      "id": "uuid-here",
+      "createdAt": "2026-03-11T00:00:00Z",
+      "updatedAt": "2026-03-11T00:00:00Z",
+      "projectId": "uuid-here",
+      "content": "A new entry for the project"
+    }
+  ]
+}
+```
+
+---
+
 ## Data Models
 
 ### BaseDTO
@@ -493,16 +538,29 @@ Example:
 
 ### ProjectResponse
 
-| Field            | Type             | Description                    |
-| ---------------- | ---------------- | ------------------------------ |
-| id               | string (UUID)    | Unique project ID              |
-| createdAt        | string (ISO8601) | Creation timestamp             |
-| updatedAt        | string (ISO8601) | Last update timestamp          |
-| userId           | string (UUID)    | Owner's User ID                |
-| name             | string           | Project name                   |
-| description      | string           | Project description            |
-| lastInteractedAt | string (ISO8601) | Last interaction timestamp     |
-| entries          | EntryResponse[]  | List of entries in the project |
+| Field            | Type             | Description                                  |
+| ---------------- | ---------------- | -------------------------------------------- |
+| id               | string (UUID)    | Unique project ID                            |
+| createdAt        | string (ISO8601) | Creation timestamp                           |
+| updatedAt        | string (ISO8601) | Last update timestamp                        |
+| userId           | string (UUID)    | Owner's User ID                              |
+| name             | string           | Project name                                 |
+| description      | string           | Project description                          |
+| lastInteractedAt | string (ISO8601) | Last interaction timestamp                   |
+| items            | ProjectItem[]    | List of items (entries/summaries) in project |
+
+### ProjectItem
+
+| Field        | Type             | Description                               |
+| ------------ | ---------------- | ----------------------------------------- |
+| id           | string (UUID)    | Unique item ID                            |
+| createdAt    | string (ISO8601) | Creation timestamp                        |
+| updatedAt    | string (ISO8601) | Last update timestamp                     |
+| projectId    | string (UUID)    | Associated Project ID                     |
+| itemType     | string           | Type of item: `entry` or `summary`        |
+| content      | string           | Item content (body or summary markdown)   |
+| entriesCount | integer          | Number of entries included (summary only) |
+| endEntryId   | string (UUID)    | Last entry ID included (summary only)     |
 
 ### EntryResponse
 

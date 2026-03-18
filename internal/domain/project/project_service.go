@@ -14,10 +14,13 @@ import (
 )
 
 type Service interface {
+	// Public
 	Create(ctx context.Context, req NewProjectRequest) (ProjectResponse, error)
 	GetAll(ctx context.Context, userID uuid.UUID) ([]ProjectResponse, error)
-	GetByID(ctx context.Context, id, userID uuid.UUID) (ProjectResponse, error)
 	AddEntry(ctx context.Context, req entry.NewEntryRequest) (entry.EntryResponse, error)
+
+	// Internal
+	GetByID(ctx context.Context, id, userID uuid.UUID) (ProjectResponse, error)
 }
 
 type service struct {
@@ -81,7 +84,6 @@ func (s *service) GetByID(ctx context.Context, id, userID uuid.UUID) (ProjectRes
 	spec := crud.Specification[Project]{}
 	spec.Model.ID = id
 	spec.Model.UserID = userID
-	spec.PreloadRelations = []string{"Entries"}
 	project, err := s.getBySpec(ctx, spec)
 	if err != nil {
 		return ProjectResponse{}, err

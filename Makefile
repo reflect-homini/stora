@@ -1,6 +1,8 @@
 .PHONY: help \
 http \
 http-hot \
+worker \
+worker-hot \
 migrate \
 lint \
 test \
@@ -15,6 +17,10 @@ uninstall-pre-push-hook
 help:
 	@echo "Makefile commands:"
 	@echo "  make http                    - Start the HTTP server"
+	@echo "  make http-hot                - Start the HTTP server with hot-reload"
+	@echo "  make worker                  - Start the worker"
+	@echo "  make worker-hot              - Start the worker with hot-reload"
+	@echo "  make migrate                 - Run the database migration"
 	@echo "  make lint                    - Run golangci-lint on the codebase"
 	@echo "  make test                    - Run all tests"
 	@echo "  make test-verbose            - Run all tests with verbose output"
@@ -30,6 +36,12 @@ http:
 
 http-hot:
 	air --build.cmd "go build -o bin/http ./cmd/http" --build.bin "./bin/http"
+
+worker:
+	go run ./cmd/worker
+
+worker-hot:
+	air --build.cmd "go build -o bin/worker ./cmd/worker" --build.bin "./bin/worker"
 
 migrate:
 	go run ./internal/adapters/db/postgres
@@ -63,6 +75,7 @@ build-all:
 	@echo "Building all programs..."
 	@mkdir -p bin
 	CGO_ENABLED=0 GOOS=linux go build -trimpath -buildvcs=false -ldflags='-w -s' -o bin/http ./cmd/http
+	CGO_ENABLED=0 GOOS=linux go build -trimpath -buildvcs=false -ldflags='-w -s' -o bin/worker ./cmd/worker
 	CGO_ENABLED=0 GOOS=linux go build -trimpath -buildvcs=false -ldflags='-w -s' -o bin/migrate ./internal/adapters/db/postgres
 	@echo "Build success! Binaries are located in bin/"
 	@ls -lh bin/

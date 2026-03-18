@@ -1,0 +1,144 @@
+package summary
+
+import (
+	"context"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/itsLeonB/go-crud"
+	"github.com/reflect-homini/stora/internal/core/logger"
+	"github.com/reflect-homini/stora/internal/core/otel"
+	"github.com/reflect-homini/stora/internal/core/util"
+	"github.com/reflect-homini/stora/internal/domain/entry"
+	"github.com/reflect-homini/stora/internal/domain/project"
+)
+
+type ProjectSummaryService interface {
+	GenerateDailySummaries(ctx context.Context) error
+	GenerateDailySummary(ctx context.Context, projectID uuid.UUID) (ProjectSummary, error)
+}
+
+type projectSummaryService struct {
+	repo            ProjectSummaryRepository
+	projectRepo     crud.Repository[project.Project]
+	entryRepo       entry.Repository
+	entrySummarizer EntrySummarizerService
+}
+
+func NewProjectSummaryService(
+	repo ProjectSummaryRepository,
+	projectRepo crud.Repository[project.Project],
+	entryRepo entry.Repository,
+	entrySummarizer EntrySummarizerService,
+) *projectSummaryService {
+	return &projectSummaryService{
+		repo,
+		projectRepo,
+		entryRepo,
+		entrySummarizer,
+	}
+}
+
+func (pss *projectSummaryService) GenerateDailySummary(ctx context.Context, projectID uuid.UUID) (ProjectSummary, error) {
+	ctx, span := otel.Tracer.Start(ctx, "ProjectSummaryService.GenerateDailySummary")
+	defer span.End()
+
+	spec := crud.Specification[project.Project]{}
+	spec.Model.ID = projectID
+	project, err := pss.projectRepo.FindFirst(ctx, spec)
+	if err != nil {
+		return ProjectSummary{}, err
+	}
+
+	start, end, err := util.GetStartAndEndOfToday()
+	if err != nil {
+		return ProjectSummary{}, err
+	}
+
+	summary, err := pss.generateSummary(ctx, project, start, end)
+	if err != nil {
+		return ProjectSummary{}, err
+	}
+
+	return pss.repo.Insert(ctx, summary)
+}
+
+func (pss *projectSummaryService) GenerateDailySummaries(ctx context.Context) error {
+	ctx, span := otel.Tracer.Start(ctx, "ProjectSummaryService.GenerateDailySummary")
+	defer span.End()
+
+	projects, err := pss.projectRepo.FindAll(ctx, crud.Specification[project.Project]{})
+	if err != nil {
+		return err
+	}
+
+	start, end, err := util.GetStartAndEndOfToday()
+	if err != nil {
+		return err
+	}
+
+	newSummaries := make([]ProjectSummary, 0, len(projects))
+	for _, project := range projects {
+		summary, err := pss.generateSummary(ctx, project, start, end)
+		if err != nil {
+			span.RecordError(err)
+			logger.Errorf("error generating summary for project ID %s: %v", project.ID, err)
+			continue
+		}
+		newSummaries = append(newSummaries, summary)
+	}
+
+	if len(newSummaries) < 1 {
+		logger.Info("no new summaries to insert")
+		return nil
+	}
+
+	_, err = pss.repo.InsertMany(ctx, newSummaries)
+	return err
+}
+
+func (pss *projectSummaryService) generateSummary(ctx context.Context, project project.Project, start, end time.Time) (ProjectSummary, error) {
+	latestSummary, entries, err := pss.getEntriesToSummarize(ctx, project.ID, start, end)
+	if err != nil {
+		return ProjectSummary{}, err
+	}
+	if len(entries) < 1 {
+		logger.Info("skipping summarization for project ID %s, empty entries...", project.ID)
+		return ProjectSummary{}, nil
+	}
+
+	return pss.entrySummarizer.Summarize(ctx, project, entries, latestSummary)
+}
+
+func (pss *projectSummaryService) getEntriesToSummarize(ctx context.Context, projectID uuid.UUID, start, end time.Time) (ProjectSummary, []entry.Entry, error) {
+	ctx, span := otel.Tracer.Start(ctx, "ProjectSummaryService.getEntriesToSummarize")
+	defer span.End()
+
+	latestSummary, err := pss.repo.GetLatest(ctx, projectID)
+	if err != nil {
+		return ProjectSummary{}, nil, err
+	}
+
+	if latestSummary.IsZero() {
+		spec := crud.Specification[entry.Entry]{}
+		spec.Model.ProjectID = projectID
+		entries, err := pss.entryRepo.FindAll(ctx, spec)
+		if err != nil {
+			return ProjectSummary{}, nil, err
+		}
+		if len(entries) >= 5 {
+			return ProjectSummary{}, entries, nil
+		}
+		return ProjectSummary{}, nil, nil
+	}
+
+	newEntriesAfterLastSummary, err := pss.entryRepo.GetAfter(ctx, projectID, latestSummary.EndEntryID, 20)
+	if err != nil {
+		return ProjectSummary{}, nil, err
+	}
+	if len(newEntriesAfterLastSummary) >= 5 {
+		return latestSummary, newEntriesAfterLastSummary, nil
+	}
+
+	return ProjectSummary{}, nil, nil
+}
