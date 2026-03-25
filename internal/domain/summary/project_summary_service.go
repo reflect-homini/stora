@@ -2,13 +2,11 @@ package summary
 
 import (
 	"context"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/itsLeonB/go-crud"
 	"github.com/reflect-homini/stora/internal/core/logger"
 	"github.com/reflect-homini/stora/internal/core/otel"
-	"github.com/reflect-homini/stora/internal/core/util"
 	"github.com/reflect-homini/stora/internal/domain/entry"
 	"github.com/reflect-homini/stora/internal/domain/project"
 )
@@ -50,14 +48,12 @@ func (pss *projectSummaryService) GenerateDailySummary(ctx context.Context, proj
 		return ProjectSummary{}, err
 	}
 
-	start, end, err := util.GetStartAndEndOfToday()
+	summary, err := pss.generateSummary(ctx, project)
 	if err != nil {
 		return ProjectSummary{}, err
 	}
-
-	summary, err := pss.generateSummary(ctx, project, start, end)
-	if err != nil {
-		return ProjectSummary{}, err
+	if summary.IsZero() {
+		return ProjectSummary{}, nil
 	}
 
 	return pss.repo.Insert(ctx, summary)
@@ -72,14 +68,9 @@ func (pss *projectSummaryService) GenerateDailySummaries(ctx context.Context) er
 		return err
 	}
 
-	start, end, err := util.GetStartAndEndOfToday()
-	if err != nil {
-		return err
-	}
-
 	newSummaries := make([]ProjectSummary, 0, len(projects))
 	for _, project := range projects {
-		summary, err := pss.generateSummary(ctx, project, start, end)
+		summary, err := pss.generateSummary(ctx, project)
 		if err != nil {
 			span.RecordError(err)
 			logger.Errorf("error generating summary for project ID %s: %v", project.ID, err)
@@ -100,8 +91,8 @@ func (pss *projectSummaryService) GenerateDailySummaries(ctx context.Context) er
 	return err
 }
 
-func (pss *projectSummaryService) generateSummary(ctx context.Context, project project.Project, start, end time.Time) (ProjectSummary, error) {
-	latestSummary, entries, err := pss.getEntriesToSummarize(ctx, project.ID, start, end)
+func (pss *projectSummaryService) generateSummary(ctx context.Context, project project.Project) (ProjectSummary, error) {
+	latestSummary, entries, err := pss.getEntriesToSummarize(ctx, project.ID)
 	if err != nil {
 		return ProjectSummary{}, err
 	}
@@ -113,7 +104,7 @@ func (pss *projectSummaryService) generateSummary(ctx context.Context, project p
 	return pss.entrySummarizer.Summarize(ctx, project, entries, latestSummary)
 }
 
-func (pss *projectSummaryService) getEntriesToSummarize(ctx context.Context, projectID uuid.UUID, start, end time.Time) (ProjectSummary, []entry.Entry, error) {
+func (pss *projectSummaryService) getEntriesToSummarize(ctx context.Context, projectID uuid.UUID) (ProjectSummary, []entry.Entry, error) {
 	ctx, span := otel.Tracer.Start(ctx, "ProjectSummaryService.getEntriesToSummarize")
 	defer span.End()
 
