@@ -38,7 +38,7 @@ func (s *service) GetByID(ctx context.Context, userID, projectID uuid.UUID) (pro
 	ctx, span := otel.Tracer.Start(ctx, "ProjectItemService.GetByID")
 	defer span.End()
 
-	proj, err := s.projectSvc.GetByID(ctx, projectID, userID)
+	proj, err := s.projectSvc.GetByID(ctx, projectID, userID, false)
 	if err != nil {
 		return project.ProjectResponse{}, err
 	}

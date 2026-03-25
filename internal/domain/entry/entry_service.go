@@ -2,26 +2,38 @@ package entry
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/itsLeonB/ezutil/v2"
+	"github.com/itsLeonB/go-crud"
+	"github.com/itsLeonB/ungerr"
 	"github.com/reflect-homini/stora/internal/core/otel"
 )
 
 type Service interface {
-	Create(ctx context.Context, req NewEntryRequest) (EntryResponse, error)
-	GetAfter(ctx context.Context, projectID, entryID uuid.UUID) ([]EntryResponse, error)
+	Create(ctx context.Context, req NewRequest) (Response, error)
+	GetAfter(ctx context.Context, projectID, entryID uuid.UUID) ([]Response, error)
+	Update(ctx context.Context, req UpdateRequest) (Response, error)
+	Delete(ctx context.Context, req DeleteRequest) error
 }
 
-func NewService(repo Repository) *service {
-	return &service{repo}
+func NewService(
+	t crud.Transactor,
+	repo Repository,
+) *service {
+	return &service{
+		t,
+		repo,
+	}
 }
 
 type service struct {
-	repo Repository
+	transactor crud.Transactor
+	repo       Repository
 }
 
-func (s *service) Create(ctx context.Context, req NewEntryRequest) (EntryResponse, error) {
+func (s *service) Create(ctx context.Context, req NewRequest) (Response, error) {
 	ctx, span := otel.Tracer.Start(ctx, "EntryService.Create")
 	defer span.End()
 
@@ -32,13 +44,13 @@ func (s *service) Create(ctx context.Context, req NewEntryRequest) (EntryRespons
 
 	insertedEntry, err := s.repo.Insert(ctx, newEntry)
 	if err != nil {
-		return EntryResponse{}, err
+		return Response{}, err
 	}
 
 	return EntryToResponse(insertedEntry), nil
 }
 
-func (s *service) GetAfter(ctx context.Context, projectID, entryID uuid.UUID) ([]EntryResponse, error) {
+func (s *service) GetAfter(ctx context.Context, projectID, entryID uuid.UUID) ([]Response, error) {
 	ctx, span := otel.Tracer.Start(ctx, "EntryService.GetAfter")
 	defer span.End()
 
@@ -48,4 +60,56 @@ func (s *service) GetAfter(ctx context.Context, projectID, entryID uuid.UUID) ([
 	}
 
 	return ezutil.MapSlice(entries, EntryToResponse), nil
+}
+
+func (s *service) Update(ctx context.Context, req UpdateRequest) (Response, error) {
+	ctx, span := otel.Tracer.Start(ctx, "EntryService.Update")
+	defer span.End()
+
+	var resp Response
+	err := s.transactor.WithinTransaction(ctx, func(ctx context.Context) error {
+		spec := crud.Specification[Entry]{}
+		spec.Model.ID = req.ID
+		spec.Model.ProjectID = req.ProjectID
+		spec.ForUpdate = true
+		entry, err := s.repo.FindFirst(ctx, spec)
+		if err != nil {
+			return err
+		}
+		if entry.IsZero() {
+			return ungerr.NotFoundError(fmt.Sprintf("entry ID %s from project ID %s is not found", req.ID, req.ProjectID))
+		}
+
+		entry.Content = req.Content
+
+		entry, err = s.repo.Update(ctx, entry)
+		if err != nil {
+			return err
+		}
+
+		resp = EntryToResponse(entry)
+		return nil
+	})
+	return resp, err
+}
+
+func (s *service) Delete(ctx context.Context, req DeleteRequest) error {
+	ctx, span := otel.Tracer.Start(ctx, "EntryService.Delete")
+	defer span.End()
+
+	return s.transactor.WithinTransaction(ctx, func(ctx context.Context) error {
+		spec := crud.Specification[Entry]{}
+		spec.Model.ID = req.ID
+		spec.Model.ProjectID = req.ProjectID
+		spec.ForUpdate = true
+		entry, err := s.repo.FindFirst(ctx, spec)
+		if err != nil {
+			return err
+		}
+		if entry.IsZero() {
+			return ungerr.NotFoundError(fmt.Sprintf("entry ID %s from project ID %s is not found", req.ID, req.ProjectID))
+		}
+
+		return s.repo.Delete(ctx, entry)
+	})
 }

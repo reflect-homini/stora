@@ -78,7 +78,7 @@ func (ph *ProjectHandler) HandleAddEntry() gin.HandlerFunc {
 			return nil, err
 		}
 
-		req, err := server.BindJSON[entry.NewEntryRequest](ctx)
+		req, err := server.BindJSON[entry.NewRequest](ctx)
 		if err != nil {
 			return nil, err
 		}
