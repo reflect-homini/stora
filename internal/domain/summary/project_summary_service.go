@@ -85,6 +85,9 @@ func (pss *projectSummaryService) GenerateDailySummaries(ctx context.Context) er
 			logger.Errorf("error generating summary for project ID %s: %v", project.ID, err)
 			continue
 		}
+		if summary.IsZero() {
+			continue
+		}
 		newSummaries = append(newSummaries, summary)
 	}
 
@@ -103,7 +106,7 @@ func (pss *projectSummaryService) generateSummary(ctx context.Context, project p
 		return ProjectSummary{}, err
 	}
 	if len(entries) < 1 {
-		logger.Info("skipping summarization for project ID %s, empty entries...", project.ID)
+		logger.Infof("skipping summarization for project ID %s, empty entries...", project.ID)
 		return ProjectSummary{}, nil
 	}
 

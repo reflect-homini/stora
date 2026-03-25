@@ -509,6 +509,95 @@ Example:
 
 ---
 
+### Update Entry
+
+#### Request
+
+**Method**: `PUT`  
+**Path**: `/api/v1/projects/:projectID/entries/:entryID`  
+**Headers**:
+
+- `Authorization: Bearer <token>`
+- `Content-Type: application/json`
+
+**Body**:
+
+| Field   | Type   | Required | Description                  |
+| ------- | ------ | -------- | ---------------------------- |
+| content | string | yes      | Entry content (min length 3) |
+
+Example:
+
+```json
+{
+  "content": "An updated entry for the project"
+}
+```
+
+#### Response
+
+**Status**: `200 OK`
+
+```json
+{
+  "data": {
+    "id": "uuid-here",
+    "createdAt": "2026-03-11T00:00:00Z",
+    "updatedAt": "2026-03-25T00:00:00Z",
+    "projectId": "uuid-here",
+    "content": "An updated entry for the project"
+  }
+}
+```
+
+---
+
+### Delete Entry
+
+#### Request
+
+**Method**: `DELETE`  
+**Path**: `/api/v1/projects/:projectID/entries/:entryID`  
+**Headers**: `Authorization: Bearer <token>`
+
+#### Response
+
+**Status**: `204 No Content`
+
+---
+
+### Generate Daily Summary
+
+> [!NOTE]
+> Currently only available in debug/development mode.
+
+#### Request
+
+**Method**: `POST`  
+**Path**: `/api/v1/projects/:projectID/summaries`  
+**Headers**: `Authorization: Bearer <token>`
+
+#### Response
+
+**Status**: `200 OK`
+
+```json
+{
+  "data": {
+    "id": "uuid-here",
+    "createdAt": "2026-03-25T00:00:00Z",
+    "updatedAt": "2026-03-25T00:00:00Z",
+    "projectId": "uuid-here",
+    "itemType": "summary",
+    "content": "## Summary\nDaily work summary...",
+    "entriesCount": 5,
+    "endEntryId": "uuid-here"
+  }
+}
+```
+
+---
+
 ## Data Models
 
 ### BaseDTO
@@ -551,16 +640,17 @@ Example:
 
 ### ProjectItem
 
-| Field        | Type             | Description                               |
-| ------------ | ---------------- | ----------------------------------------- |
-| id           | string (UUID)    | Unique item ID                            |
-| createdAt    | string (ISO8601) | Creation timestamp                        |
-| updatedAt    | string (ISO8601) | Last update timestamp                     |
-| projectId    | string (UUID)    | Associated Project ID                     |
-| itemType     | string           | Type of item: `entry` or `summary`        |
-| content      | string           | Item content (body or summary markdown)   |
-| entriesCount | integer          | Number of entries included (summary only) |
-| endEntryId   | string (UUID)    | Last entry ID included (summary only)     |
+| Field             | Type             | Description                               |
+| ----------------- | ---------------- | ----------------------------------------- |
+| id                | string (UUID)    | Unique item ID                            |
+| createdAt         | string (ISO8601) | Creation timestamp                        |
+| updatedAt         | string (ISO8601) | Last update timestamp                     |
+| projectId         | string (UUID)    | Associated Project ID                     |
+| itemType          | string           | Type of item: `entry` or `summary`        |
+| content           | string           | Item content (body or summary markdown)   |
+| additionalContent | string           | Additional markdown (summaries only)      |
+| entriesCount      | integer          | Number of entries included (summary only) |
+| endEntryId        | string (UUID)    | Last entry ID included (summary only)     |
 
 ### EntryResponse
 
