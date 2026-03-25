@@ -26,12 +26,12 @@ func run() int {
 	ctx := context.Background()
 	otelShutdown, err := otel.InitSDK(ctx, config.Global.OTel)
 	if err != nil {
-		logger.Error("failed to initialize OTel SDK: %v", err)
+		logger.Error(err)
 		return 1
 	}
 	defer func() {
 		if err := otelShutdown(ctx); err != nil {
-			logger.Errorf("error shutting down OTel SDK: %v", err)
+			logger.Error(err)
 		}
 	}()
 
