@@ -423,9 +423,10 @@ Example:
         "updatedAt": "2026-03-12T00:00:00Z",
         "projectId": "uuid-here",
         "itemType": "summary",
-        "content": "## Summary\nWork completed...",
+        "content": "Work completed...",
         "entriesCount": 5,
-        "endEntryId": "uuid-here"
+        "endEntryId": "uuid-here",
+        "additionalContent": "## Learnings\nKey insights and action items..."
       }
     ]
   }
@@ -591,7 +592,8 @@ Example:
     "itemType": "summary",
     "content": "## Summary\nDaily work summary...",
     "entriesCount": 5,
-    "endEntryId": "uuid-here"
+    "endEntryId": "uuid-here",
+    "additionalContent": ""
   }
 }
 ```
@@ -640,17 +642,17 @@ Example:
 
 ### ProjectItem
 
-| Field             | Type             | Description                               |
-| ----------------- | ---------------- | ----------------------------------------- |
-| id                | string (UUID)    | Unique item ID                            |
-| createdAt         | string (ISO8601) | Creation timestamp                        |
-| updatedAt         | string (ISO8601) | Last update timestamp                     |
-| projectId         | string (UUID)    | Associated Project ID                     |
-| itemType          | string           | Type of item: `entry` or `summary`        |
-| content           | string           | Item content (body or summary markdown)   |
-| additionalContent | string           | Additional markdown (summaries only)      |
-| entriesCount      | integer          | Number of entries included (summary only) |
-| endEntryId        | string (UUID)    | Last entry ID included (summary only)     |
+| Field             | Type             | Description                                            |
+| ----------------- | ---------------- | ------------------------------------------------------ |
+| id                | string (UUID)    | Unique item ID                                         |
+| createdAt         | string (ISO8601) | Creation timestamp                                     |
+| updatedAt         | string (ISO8601) | Last update timestamp                                  |
+| projectId         | string (UUID)    | Associated Project ID                                  |
+| itemType          | string           | Type of item: `entry` or `summary`                     |
+| content           | string           | Item content (body or summary markdown)                |
+| additionalContent | string           | Additional markdown (summaries only, omitted if empty) |
+| entriesCount      | integer          | Number of entries included (summary only)              |
+| endEntryId        | string (UUID)    | Last entry ID included (summary only)                  |
 
 ### EntryResponse
 

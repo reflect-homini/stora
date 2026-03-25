@@ -58,8 +58,9 @@ func (es *entrySummarizer) Summarize(ctx context.Context, project project.Projec
 	}
 
 	timeframeLabel := es.computeTimeframeLabel(entries)
-	periodStart := entries[0].CreatedAt
-	periodEnd := entries[len(entries)-1].CreatedAt
+
+	startEntry := entries[len(entries)-1]
+	endEntry := entries[0]
 
 	prompt := es.constructPrompt(project, entries, timeframeLabel, previousSummary)
 	response, err := es.llmSvc.Prompt(ctx, prompt)
@@ -75,12 +76,12 @@ func (es *entrySummarizer) Summarize(ctx context.Context, project project.Projec
 		SummaryMarkdown: sql.NullString{String: summaryMarkdown, Valid: true},
 		InsightsJSON:    sql.NullString{String: insightsJSON, Valid: true},
 		SummaryLevel:    DailyLevel,
-		StartEntryID:    entries[len(entries)-1].ID,
-		EndEntryID:      entries[0].ID,
+		StartEntryID:    startEntry.ID,
+		EndEntryID:      endEntry.ID,
 		EntriesCount:    len(entries),
 		TimeframeLabel:  timeframeLabel,
-		PeriodStart:     periodStart,
-		PeriodEnd:       periodEnd,
+		PeriodStart:     startEntry.CreatedAt,
+		PeriodEnd:       endEntry.CreatedAt,
 	}, nil
 }
 

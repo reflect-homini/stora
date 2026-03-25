@@ -64,7 +64,7 @@ func (s *service) UpdateEntry(ctx context.Context, req entry.UpdateRequest) (ent
 }
 
 func (s *service) DeleteEntry(ctx context.Context, req entry.DeleteRequest) error {
-	ctx, span := otel.Tracer.Start(ctx, "EntryManipulationService.UpdateEntry")
+	ctx, span := otel.Tracer.Start(ctx, "EntryManipulationService.DeleteEntry")
 	defer span.End()
 
 	return s.transactor.WithinTransaction(ctx, func(ctx context.Context) error {
