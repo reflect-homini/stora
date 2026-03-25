@@ -41,7 +41,7 @@ func (eh *EntryHandler) HandleUpdateEntry() gin.HandlerFunc {
 		req.ProjectID = projectID
 		req.ID = entryID
 
-		return eh.entryManipSvc.UpdateEntry(ctx, req)
+		return eh.entryManipSvc.UpdateEntry(ctx.Request.Context(), req)
 	})
 }
 
@@ -68,6 +68,6 @@ func (eh *EntryHandler) HandleDeleteEntry() gin.HandlerFunc {
 			ID:        entryID,
 		}
 
-		return nil, eh.entryManipSvc.DeleteEntry(ctx, req)
+		return nil, eh.entryManipSvc.DeleteEntry(ctx.Request.Context(), req)
 	})
 }

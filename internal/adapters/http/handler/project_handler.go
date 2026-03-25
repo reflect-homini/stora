@@ -103,6 +103,11 @@ func (ph *ProjectHandler) HandleGenerateSummary() gin.HandlerFunc {
 
 func (ph *ProjectHandler) HandleGetEntriesAfter() gin.HandlerFunc {
 	return server.Handler("ProjectHandler.HandleGetEntriesAfter", http.StatusOK, func(ctx *gin.Context) (any, error) {
+		userID, err := getUserID(ctx)
+		if err != nil {
+			return nil, err
+		}
+
 		projectID, err := server.GetRequiredPathParam[uuid.UUID](ctx, string(appconstant.ContextProjectID))
 		if err != nil {
 			return nil, err
@@ -117,6 +122,6 @@ func (ph *ProjectHandler) HandleGetEntriesAfter() gin.HandlerFunc {
 			}
 		}
 
-		return ph.entrySvc.GetAfter(ctx.Request.Context(), projectID, entryID)
+		return ph.svc.GetEntriesAfter(ctx.Request.Context(), userID, projectID, entryID)
 	})
 }

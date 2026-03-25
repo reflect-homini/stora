@@ -18,6 +18,7 @@ type Service interface {
 	Create(ctx context.Context, req NewProjectRequest) (ProjectResponse, error)
 	GetAll(ctx context.Context, userID uuid.UUID) ([]ProjectResponse, error)
 	AddEntry(ctx context.Context, req entry.NewRequest) (entry.Response, error)
+	GetEntriesAfter(ctx context.Context, userID, projectID, entryID uuid.UUID) ([]entry.Response, error)
 
 	// Internal
 	GetByID(ctx context.Context, id, userID uuid.UUID, forUpdate bool) (ProjectResponse, error)
@@ -116,4 +117,15 @@ func (s *service) AddEntry(ctx context.Context, req entry.NewRequest) (entry.Res
 		return err
 	})
 	return resp, err
+}
+
+func (s *service) GetEntriesAfter(ctx context.Context, userID, projectID, entryID uuid.UUID) ([]entry.Response, error) {
+	ctx, span := otel.Tracer.Start(ctx, "ProjectService.GetEntriesAfter")
+	defer span.End()
+
+	if _, err := s.GetByID(ctx, projectID, userID, false); err != nil {
+		return nil, err
+	}
+
+	return s.entrySvc.GetAfter(ctx, projectID, entryID)
 }
