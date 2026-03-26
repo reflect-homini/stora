@@ -590,10 +590,10 @@ Example:
     "updatedAt": "2026-03-25T00:00:00Z",
     "projectId": "uuid-here",
     "itemType": "summary",
-    "content": "## Summary\nDaily work summary...",
+    "content": "Daily work summary...",
     "entriesCount": 5,
     "endEntryId": "uuid-here",
-    "additionalContent": ""
+    "additionalContent": "## Learnings\nKey insights and action items..."
   }
 }
 ```
@@ -649,7 +649,7 @@ Example:
 | updatedAt         | string (ISO8601) | Last update timestamp                                  |
 | projectId         | string (UUID)    | Associated Project ID                                  |
 | itemType          | string           | Type of item: `entry` or `summary`                     |
-| content           | string           | Item content (body or summary markdown)                |
+| content           | string           | Item content (entry body or summary text)              |
 | additionalContent | string           | Additional markdown (summaries only, omitted if empty) |
 | entriesCount      | integer          | Number of entries included (summary only)              |
 | endEntryId        | string (UUID)    | Last entry ID included (summary only)                  |

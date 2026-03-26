@@ -2,9 +2,11 @@ package summary
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/google/uuid"
 	"github.com/itsLeonB/go-crud"
+	"github.com/itsLeonB/ungerr"
 	"github.com/reflect-homini/stora/internal/core/logger"
 	"github.com/reflect-homini/stora/internal/core/otel"
 	"github.com/reflect-homini/stora/internal/domain/entry"
@@ -47,6 +49,9 @@ func (pss *projectSummaryService) GenerateDailySummary(ctx context.Context, proj
 	if err != nil {
 		return ProjectSummary{}, err
 	}
+	if project.IsZero() {
+		return ProjectSummary{}, ungerr.NotFoundError(fmt.Sprintf("project with ID %s not found", projectID))
+	}
 
 	summary, err := pss.generateSummary(ctx, project)
 	if err != nil {
@@ -66,6 +71,11 @@ func (pss *projectSummaryService) GenerateDailySummaries(ctx context.Context) er
 	projects, err := pss.projectRepo.FindAll(ctx, crud.Specification[project.Project]{})
 	if err != nil {
 		return err
+	}
+
+	if len(projects) < 1 {
+		logger.Info("no projects found")
+		return nil
 	}
 
 	newSummaries := make([]ProjectSummary, 0, len(projects))
@@ -97,7 +107,7 @@ func (pss *projectSummaryService) generateSummary(ctx context.Context, project p
 		return ProjectSummary{}, err
 	}
 	if len(entries) < 1 {
-		logger.Infof("skipping summarization for project ID %s, empty entries...", project.ID)
+		logger.Infof("skipping summarization for project ID %s...", project.ID)
 		return ProjectSummary{}, nil
 	}
 
@@ -123,6 +133,7 @@ func (pss *projectSummaryService) getEntriesToSummarize(ctx context.Context, pro
 		if len(entries) >= 5 {
 			return ProjectSummary{}, entries, nil
 		}
+		logger.Infof("insufficient entries for project ID %s, entries count: %d", projectID, len(entries))
 		return ProjectSummary{}, nil, nil
 	}
 
@@ -134,5 +145,6 @@ func (pss *projectSummaryService) getEntriesToSummarize(ctx context.Context, pro
 		return latestSummary, newEntriesAfterLastSummary, nil
 	}
 
+	logger.Infof("insufficient entries after last summary for project ID %s, entries count: %d", projectID, len(newEntriesAfterLastSummary))
 	return ProjectSummary{}, nil, nil
 }
