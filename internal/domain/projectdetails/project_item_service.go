@@ -2,6 +2,7 @@ package projectdetails
 
 import (
 	"context"
+	"slices"
 
 	"github.com/google/uuid"
 	"github.com/itsLeonB/ezutil/v2"
@@ -70,12 +71,15 @@ func (s *service) getItems(ctx context.Context, projectID uuid.UUID) ([]project.
 		return nil, err
 	}
 
+	// temp fix to reverse ordering
+	slices.Reverse(summaries)
+
 	items := make([]project.ProjectItem, 0, len(entries)+len(summaries))
-	for _, entry := range entries {
-		items = append(items, entryToItem(entry))
-	}
 	for _, summary := range summaries {
 		items = append(items, summaryToItem(summary))
+	}
+	for _, entry := range entries {
+		items = append(items, entryToItem(entry))
 	}
 
 	return items, nil
@@ -91,6 +95,9 @@ func (s *service) getEntries(ctx context.Context, projectID uuid.UUID) ([]projec
 	if err != nil {
 		return nil, err
 	}
+
+	// temp fix to reverse ordering
+	slices.Reverse(entries)
 
 	return ezutil.MapSlice(entries, entryToItem), nil
 }
