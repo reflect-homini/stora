@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"sort"
 	"strings"
 	"time"
 
@@ -57,12 +56,10 @@ func (es *entrySummarizer) Summarize(ctx context.Context, project project.Projec
 		return ProjectSummary{}, nil
 	}
 
-	timeframeLabel := es.computeTimeframeLabel(entries)
-
 	startEntry := entries[len(entries)-1]
 	endEntry := entries[0]
 
-	prompt := es.constructPrompt(project, entries, timeframeLabel, previousSummary)
+	prompt := es.constructPrompt(project, entries, previousSummary)
 	response, err := es.llmSvc.Prompt(ctx, prompt)
 	if err != nil {
 		return ProjectSummary{}, err
@@ -79,81 +76,17 @@ func (es *entrySummarizer) Summarize(ctx context.Context, project project.Projec
 		StartEntryID:    startEntry.ID,
 		EndEntryID:      endEntry.ID,
 		EntriesCount:    len(entries),
-		TimeframeLabel:  timeframeLabel,
 		PeriodStart:     startEntry.CreatedAt,
 		PeriodEnd:       endEntry.CreatedAt,
 	}, nil
 }
 
-func (es *entrySummarizer) computeTimeframeLabel(entries []entry.Entry) string {
-	if len(entries) == 0 {
-		return ""
-	}
-
-	days := make(map[string]time.Time)
-	months := make(map[time.Month]bool)
-	var dates []time.Time
-
-	for _, e := range entries {
-		d := e.CreatedAt.Format("2006-01-02")
-		if _, ok := days[d]; !ok {
-			days[d] = e.CreatedAt
-			dates = append(dates, e.CreatedAt)
-		}
-		months[e.CreatedAt.Month()] = true
-	}
-
-	sort.Slice(dates, func(i, j int) bool {
-		return dates[i].Before(dates[j])
-	})
-
-	if len(days) == 1 {
-		return "Today"
-	}
-
-	// Check if consecutive
-	isConsecutive := true
-	if len(dates) > 1 {
-		for i := 1; i < len(dates); i++ {
-			diff := dates[i].Sub(dates[i-1])
-			if diff > 24*time.Hour+1*time.Minute {
-				isConsecutive = false
-				break
-			}
-		}
-	}
-
-	if isConsecutive {
-		return fmt.Sprintf("Last %d days", len(days))
-	}
-
-	// Separate months
-	var monthNames []string
-	var sortedMonths []time.Month
-	for m := range months {
-		sortedMonths = append(sortedMonths, m)
-	}
-	sort.Slice(sortedMonths, func(i, j int) bool {
-		return sortedMonths[i] < sortedMonths[j]
-	})
-	for _, m := range sortedMonths {
-		monthNames = append(monthNames, m.String())
-	}
-
-	if len(monthNames) > 1 {
-		return strings.Join(monthNames[:len(monthNames)-1], ", ") + " and " + monthNames[len(monthNames)-1]
-	}
-
-	return monthNames[0]
-}
-
-func (es *entrySummarizer) constructPrompt(project project.Project, entries []entry.Entry, timeframeLabel string, previousSummary ProjectSummary) llm.Prompt {
+func (es *entrySummarizer) constructPrompt(project project.Project, entries []entry.Entry, previousSummary ProjectSummary) llm.Prompt {
 	var sb strings.Builder
 	fmt.Fprintf(&sb, "Project: %s\n", project.Name)
 	if project.Description.Valid {
 		fmt.Fprintf(&sb, "Project Description: %s\n", project.Description.String)
 	}
-	fmt.Fprintf(&sb, "Timeframe: %s\n", timeframeLabel)
 
 	if previousSummary.SummaryMarkdown.Valid && previousSummary.SummaryMarkdown.String != "" {
 		fmt.Fprintf(&sb, "\nPrevious Summary:\n%s\n", previousSummary.SummaryMarkdown.String)
@@ -236,9 +169,7 @@ You are an assistant summarizing a user's work journal.
 
 Your job is to produce a structured JSON summary of recent entries.
 
-Use the provided timeframe label to describe when the work happened.
 Do not describe inactive periods.
-If entries occur in separate months, mention each month explicitly rather than describing continuous work.
 
 You must return a JSON object with exactly three fields:
 
