@@ -7,13 +7,17 @@ import (
 // ClassifyRelativeTimeframeSentence generates a relative timeframe sentence based on start and end times,
 // entry count, and current time.
 func ClassifyRelativeTimeframeSentence(start, end time.Time, entryCount int, now time.Time) string {
+	start = start.UTC()
+	end = end.UTC()
+	now = now.UTC()
+
 	if end.After(now) {
 		return "Recently,"
 	}
 
 	delta := now.Sub(end)
-	startDay := time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, start.Location())
-	endDay := time.Date(end.Year(), end.Month(), end.Day(), 0, 0, 0, 0, end.Location())
+	startDay := time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, time.UTC)
+	endDay := time.Date(end.Year(), end.Month(), end.Day(), 0, 0, 0, 0, time.UTC)
 	daySpan := max(int(endDay.Sub(startDay).Hours()/24)+1, 1)
 
 	density := float64(entryCount) / float64(daySpan)
