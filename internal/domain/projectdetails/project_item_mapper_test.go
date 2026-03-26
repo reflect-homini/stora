@@ -39,7 +39,7 @@ func TestSummaryToItem(t *testing.T) {
 		EntriesCount: 5,
 	}
 
-	item := summaryToItem(s)
+	item := summaryToItem(s, now)
 
 	// "Today," + " " + "fixed latency issues."
 	assert.Equal(t, "Today, fixed latency issues.", item.Content)

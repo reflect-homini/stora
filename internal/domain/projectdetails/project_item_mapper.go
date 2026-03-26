@@ -22,12 +22,13 @@ func entryToItem(e entry.Entry) project.ProjectItem {
 	}
 }
 
-func summaryToItem(s summary.ProjectSummary) project.ProjectItem {
-	now := time.Now()
-	sentence := timeframe.ClassifyRelativeTimeframeSentence(s.PeriodStart, s.PeriodEnd, s.EntriesCount, now)
-	normalizedSummary := normalizeSummary(s.SummaryText.String)
-
-	content := fmt.Sprintf("%s %s", sentence, normalizedSummary)
+func summaryToItem(s summary.ProjectSummary, now time.Time) project.ProjectItem {
+	var content string
+	if s.SummaryText.Valid {
+		sentence := timeframe.ClassifyRelativeTimeframeSentence(s.PeriodStart, s.PeriodEnd, s.EntriesCount, now)
+		normalizedSummary := normalizeSummary(s.SummaryText.String)
+		content = fmt.Sprintf("%s %s", sentence, normalizedSummary)
+	}
 
 	return project.ProjectItem{
 		BaseDTO:           mapper.BaseToDTO(s.BaseEntity),
