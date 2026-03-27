@@ -1,11 +1,10 @@
-package projectdetails
+package project
 
 import (
 	"database/sql"
 	"testing"
 	"time"
 
-	"github.com/reflect-homini/stora/internal/domain/summary"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -32,7 +31,7 @@ func TestNormalizeSummary(t *testing.T) {
 
 func TestSummaryToItem(t *testing.T) {
 	now := time.Now()
-	s := summary.ProjectSummary{
+	s := ProjectSummary{
 		SummaryText:  sql.NullString{String: "Fixed latency issues.", Valid: true},
 		PeriodStart:  now.Add(-2 * time.Hour),
 		PeriodEnd:    now.Add(-1 * time.Hour),

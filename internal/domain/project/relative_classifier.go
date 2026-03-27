@@ -1,7 +1,9 @@
-package timeframe
+package project
 
 import (
 	"time"
+
+	"github.com/reflect-homini/stora/internal/appconstant"
 )
 
 // ClassifyRelativeTimeframeSentence generates a relative timeframe sentence based on start and end times,
@@ -15,6 +17,11 @@ func ClassifyRelativeTimeframeSentence(start, end time.Time, entryCount int, now
 		return "Recently,"
 	}
 
+	startDay, endDay, delta, daySpan, isSparse := calculate(now, start, end, entryCount)
+	return classify(now, startDay, endDay, delta, daySpan, isSparse)
+}
+
+func calculate(now, start, end time.Time, entryCount int) (time.Time, time.Time, time.Duration, int, bool) {
 	delta := now.Sub(end)
 	startDay := time.Date(start.Year(), start.Month(), start.Day(), 0, 0, 0, 0, time.UTC)
 	endDay := time.Date(end.Year(), end.Month(), end.Day(), 0, 0, 0, 0, time.UTC)
@@ -23,6 +30,10 @@ func ClassifyRelativeTimeframeSentence(start, end time.Time, entryCount int, now
 	density := float64(entryCount) / float64(daySpan)
 	isSparse := density < 0.5
 
+	return startDay, endDay, delta, daySpan, isSparse
+}
+
+func classify(now, startDay, endDay time.Time, delta time.Duration, daySpan int, isSparse bool) string {
 	// Single-Day Cases
 	if startDay.Equal(endDay) {
 		nowDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
@@ -44,41 +55,34 @@ func ClassifyRelativeTimeframeSentence(start, end time.Time, entryCount int, now
 		return "Over the past few days,"
 	}
 
-	// Relative Time Buckets based on delta (now - end)
-	const (
-		day   = 24 * time.Hour
-		week  = 7 * day
-		month = 30 * day
-	)
-
-	if delta <= 1*day {
+	if delta <= 1*appconstant.Day {
 		// This covers cases where end was "yesterday" but maybe start was different.
 		// Detailed rules say "Yesterday," (if not same-day)
 		return "Yesterday,"
 	}
 
-	if delta <= 1*week {
+	if delta <= 1*appconstant.Week {
 		if isSparse {
 			return "On a few occasions earlier this week,"
 		}
 		return "Earlier this week,"
 	}
 
-	if delta <= 2*week {
+	if delta <= 2*appconstant.Week {
 		if isSparse {
 			return "On a few occasions over the past week,"
 		}
 		return "Last week,"
 	}
 
-	if delta <= 1*month {
+	if delta <= 1*appconstant.Month {
 		if isSparse {
 			return "At a few points over the past month,"
 		}
 		return "A few weeks ago,"
 	}
 
-	if delta <= 3*month {
+	if delta <= 3*appconstant.Month {
 		if isSparse {
 			return "At a few points over the past couple of months,"
 		}

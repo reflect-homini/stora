@@ -1,4 +1,4 @@
-package timeframe
+package project
 
 import (
 	"testing"

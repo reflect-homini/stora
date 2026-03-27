@@ -1,4 +1,4 @@
-package projectdetails
+package project
 
 import (
 	"fmt"
@@ -6,34 +6,30 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/reflect-homini/stora/internal/domain/entry"
 	"github.com/reflect-homini/stora/internal/domain/mapper"
-	"github.com/reflect-homini/stora/internal/domain/project"
-	"github.com/reflect-homini/stora/internal/domain/summary"
-	"github.com/reflect-homini/stora/internal/domain/timeframe"
 )
 
-func entryToItem(e entry.Entry) project.ProjectItem {
-	return project.ProjectItem{
+func entryToItem(e Entry) ProjectItem {
+	return ProjectItem{
 		BaseDTO:   mapper.BaseToDTO(e.BaseEntity),
 		ProjectID: e.ProjectID,
-		ItemType:  project.ItemTypeEntry,
+		ItemType:  ItemTypeEntry,
 		Content:   e.Content,
 	}
 }
 
-func summaryToItem(s summary.ProjectSummary, now time.Time) project.ProjectItem {
+func summaryToItem(s ProjectSummary, now time.Time) ProjectItem {
 	var content string
 	if s.SummaryText.Valid {
-		sentence := timeframe.ClassifyRelativeTimeframeSentence(s.PeriodStart, s.PeriodEnd, s.EntriesCount, now)
+		sentence := ClassifyRelativeTimeframeSentence(s.PeriodStart, s.PeriodEnd, s.EntriesCount, now)
 		normalizedSummary := normalizeSummary(s.SummaryText.String)
 		content = fmt.Sprintf("%s %s", sentence, normalizedSummary)
 	}
 
-	return project.ProjectItem{
+	return ProjectItem{
 		BaseDTO:           mapper.BaseToDTO(s.BaseEntity),
 		ProjectID:         s.ProjectID,
-		ItemType:          project.ItemTypeSummary,
+		ItemType:          ItemTypeSummary,
 		Content:           content,
 		AdditionalContent: s.SummaryMarkdown.String,
 		EntriesCount:      s.EntriesCount,

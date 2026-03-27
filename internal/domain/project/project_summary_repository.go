@@ -1,4 +1,4 @@
-package summary
+package project
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 
 type ProjectSummaryRepository interface {
 	crud.Repository[ProjectSummary]
-	GetLatest(ctx context.Context, projectID uuid.UUID) (ProjectSummary, error)
+	FindLatest(ctx context.Context, projectID uuid.UUID) (ProjectSummary, error)
 }
 
 func NewProjectSummaryRepository(db *gorm.DB) *projectSummaryRepo {
@@ -23,8 +23,8 @@ type projectSummaryRepo struct {
 	crud.Repository[ProjectSummary]
 }
 
-func (psr *projectSummaryRepo) GetLatest(ctx context.Context, projectID uuid.UUID) (ProjectSummary, error) {
-	ctx, span := otel.Tracer.Start(ctx, "ProjectSummaryRepository.GetLatest")
+func (psr *projectSummaryRepo) FindLatest(ctx context.Context, projectID uuid.UUID) (ProjectSummary, error) {
+	ctx, span := otel.Tracer.Start(ctx, "ProjectSummaryRepository.FindLatest")
 	defer span.End()
 
 	db, err := psr.GetGormInstance(ctx)

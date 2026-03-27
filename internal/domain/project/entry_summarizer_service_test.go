@@ -1,20 +1,18 @@
-package summary
+package project
 
 import (
 	"database/sql"
 	"testing"
 	"time"
 
-	"github.com/reflect-homini/stora/internal/domain/entry"
-	"github.com/reflect-homini/stora/internal/domain/project"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestConstructPrompt(t *testing.T) {
 	es := &entrySummarizer{}
 
-	p := project.Project{Name: "Test Project"}
-	entries := []entry.Entry{
+	p := Project{Name: "Test Project"}
+	entries := []Entry{
 		{Content: "Entry 1"},
 	}
 	entries[0].CreatedAt = time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)

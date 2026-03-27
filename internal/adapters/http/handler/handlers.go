@@ -4,21 +4,23 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/itsLeonB/ginkgo/pkg/server"
-	"github.com/reflect-homini/stora/internal/domain/appconstant"
+	"github.com/reflect-homini/stora/internal/appconstant"
 	"github.com/reflect-homini/stora/internal/provider"
 )
 
 type Handlers struct {
-	Auth    *AuthHandler
-	Project *ProjectHandler
-	Entry   *EntryHandler
+	Auth           *AuthHandler
+	Project        *ProjectHandler
+	Entry          *EntryHandler
+	ProjectSummary *ProjectSummaryHandler
 }
 
 func ProvideHandlers(services *provider.Services) *Handlers {
 	return &Handlers{
 		NewAuthHandler(services.Auth, services.OAuth, services.Session, services.User),
-		&ProjectHandler{services.Project, services.ProjectSummary, services.ProjectDetails, services.Entry},
-		&EntryHandler{services.EntryManipulation},
+		&ProjectHandler{services.Project},
+		&EntryHandler{services.Entry},
+		&ProjectSummaryHandler{services.ProjectSummary},
 	}
 }
 

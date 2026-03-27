@@ -1,4 +1,4 @@
-package summary
+package project
 
 import (
 	"context"
@@ -13,8 +13,6 @@ import (
 	"github.com/reflect-homini/stora/internal/core/llm"
 	"github.com/reflect-homini/stora/internal/core/logger"
 	"github.com/reflect-homini/stora/internal/core/otel"
-	"github.com/reflect-homini/stora/internal/domain/entry"
-	"github.com/reflect-homini/stora/internal/domain/project"
 )
 
 // llmSummaryResponse matches the JSON schema enforced via the LLM response format.
@@ -34,7 +32,7 @@ type llmInsightsJSON struct {
 }
 
 type EntrySummarizerService interface {
-	Summarize(ctx context.Context, project project.Project, entries []entry.Entry, previousSummary ProjectSummary) (ProjectSummary, error)
+	Summarize(ctx context.Context, project Project, entries []Entry, previousSummary ProjectSummary) (ProjectSummary, error)
 }
 
 type entrySummarizer struct {
@@ -49,7 +47,7 @@ func NewEntrySummarizerService(
 	}
 }
 
-func (es *entrySummarizer) Summarize(ctx context.Context, project project.Project, entries []entry.Entry, previousSummary ProjectSummary) (ProjectSummary, error) {
+func (es *entrySummarizer) Summarize(ctx context.Context, project Project, entries []Entry, previousSummary ProjectSummary) (ProjectSummary, error) {
 	ctx, span := otel.Tracer.Start(ctx, "EntrySummarizerService.Summarize")
 	defer span.End()
 
@@ -86,7 +84,7 @@ func (es *entrySummarizer) Summarize(ctx context.Context, project project.Projec
 	}, nil
 }
 
-func (es *entrySummarizer) constructPrompt(project project.Project, entries []entry.Entry, previousSummary ProjectSummary) llm.Prompt {
+func (es *entrySummarizer) constructPrompt(project Project, entries []Entry, previousSummary ProjectSummary) llm.Prompt {
 	var sb strings.Builder
 	fmt.Fprintf(&sb, "Project: %s\n", project.Name)
 	if project.Description.Valid {

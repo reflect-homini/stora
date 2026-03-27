@@ -12,7 +12,7 @@ func (s *Scheduler) getSchedules() []scheduleConfig {
 	return []scheduleConfig{
 		{
 			cronSpec: "0 0 * * *",
-			jobFn:    s.projectSummarySvc.GenerateDailySummaries,
+			jobFn:    s.projectSummarySvc.GenerateAll,
 			jobName:  "project summary generation",
 		},
 	}

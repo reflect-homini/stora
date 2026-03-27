@@ -6,7 +6,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/itsLeonB/go-crud"
-	"github.com/reflect-homini/stora/internal/domain/entry"
 )
 
 type Project struct {
@@ -15,7 +14,4 @@ type Project struct {
 	Name             string
 	Description      sql.NullString
 	LastInteractedAt time.Time
-
-	// Relations
-	Entries []entry.Entry
 }

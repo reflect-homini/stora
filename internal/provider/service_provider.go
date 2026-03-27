@@ -6,11 +6,7 @@ import (
 	"github.com/itsLeonB/sekure"
 	"github.com/reflect-homini/stora/internal/core/config"
 	"github.com/reflect-homini/stora/internal/domain/auth"
-	"github.com/reflect-homini/stora/internal/domain/entry"
-	"github.com/reflect-homini/stora/internal/domain/entrymanip"
 	"github.com/reflect-homini/stora/internal/domain/project"
-	"github.com/reflect-homini/stora/internal/domain/projectdetails"
-	"github.com/reflect-homini/stora/internal/domain/summary"
 	"github.com/reflect-homini/stora/internal/domain/user"
 )
 
@@ -24,13 +20,9 @@ type Services struct {
 	User user.Service
 
 	// Projects
-	Project           project.Service
-	Entry             entry.Service
-	ProjectDetails    projectdetails.Service
-	EntryManipulation entrymanip.Service
-
-	// Summaries
-	ProjectSummary summary.ProjectSummaryService
+	Project        project.ProjectService
+	Entry          project.EntryService
+	ProjectSummary project.ProjectSummaryService
 }
 
 func ProvideServices(
@@ -44,10 +36,9 @@ func ProvideServices(
 	user := user.NewUserService(repos.Transactor, repos.User, repos.PasswordResetToken, coreSvc.Mail)
 	session := auth.NewSessionService(jwt, user, repos.Transactor, repos.Session, repos.RefreshToken)
 
-	entrySvc := entry.NewService(repos.Transactor, repos.Entry)
-	projectSvc := project.NewService(repos.Transactor, repos.Project, entrySvc)
-
-	entrySummarizer := summary.NewEntrySummarizerService(coreSvc.LLM)
+	projectSvc := project.NewProjectService(repos.Transactor, repos.Project, repos.ProjectSummary, repos.Entry)
+	entrySvc := project.NewEntryService(repos.Transactor, repos.Entry, projectSvc, repos.ProjectSummary)
+	entrySummarizer := project.NewEntrySummarizerService(coreSvc.LLM)
 
 	return &Services{
 		Auth:    auth.NewAuthService(jwt, repos.Transactor, user, coreSvc.Mail, appConfig.RegisterVerificationUrl, appConfig.ResetPasswordUrl, authConfig.HashCost, session),
@@ -56,11 +47,8 @@ func ProvideServices(
 
 		User: user,
 
-		Project:           projectSvc,
-		Entry:             entrySvc,
-		ProjectDetails:    projectdetails.NewService(repos.ProjectSummary, repos.Entry, projectSvc),
-		EntryManipulation: entrymanip.NewService(repos.Transactor, repos.ProjectSummary, projectSvc, entrySvc),
-
-		ProjectSummary: summary.NewProjectSummaryService(repos.ProjectSummary, repos.Project, repos.Entry, entrySummarizer),
+		Project:        projectSvc,
+		Entry:          entrySvc,
+		ProjectSummary: project.NewProjectSummaryService(repos.ProjectSummary, repos.Entry, entrySummarizer, projectSvc),
 	}
 }
