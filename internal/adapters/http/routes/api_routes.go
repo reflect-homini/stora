@@ -36,20 +36,20 @@ func RegisterAPIRoutes(router *gin.Engine, handlers *handler.Handlers, authMiddl
 					projectRoutes.POST("", handlers.Project.HandleCreate())
 					projectRoutes.GET("", handlers.Project.HandleGetAll())
 					projectRoutes.GET("/:"+string(appconstant.ContextProjectID), handlers.Project.HandleGetByID())
-					projectRoutes.GET("/:"+string(appconstant.ContextProjectID)+"/summaries/:"+string(appconstant.ContextSummaryID)+"/entries", handlers.Project.HandleGetSummaryEntries())
+					projectRoutes.GET("/:"+string(appconstant.ContextProjectID)+"/summaries/:"+string(appconstant.ContextSummaryID)+"/entries", handlers.ProjectSummary.HandleGetEntries())
 
 					entryRoutes := projectRoutes.Group("/:" + string(appconstant.ContextProjectID) + "/entries")
 					{
-						entryRoutes.POST("", handlers.Project.HandleAddEntry())
-						entryRoutes.PUT("/:"+string(appconstant.ContextEntryID), handlers.Entry.HandleUpdateEntry())
-						entryRoutes.DELETE("/:"+string(appconstant.ContextEntryID), handlers.Entry.HandleDeleteEntry())
+						entryRoutes.POST("", handlers.Entry.HandleCreate())
+						entryRoutes.PUT("/:"+string(appconstant.ContextEntryID), handlers.Entry.HandleUpdate())
+						entryRoutes.DELETE("/:"+string(appconstant.ContextEntryID), handlers.Entry.HandleDelete())
 					}
 				}
 			}
 
 			if config.Global.App.Env == "debug" {
-				v1.POST("/projects/:"+string(appconstant.ContextProjectID)+"/summaries", handlers.Project.HandleGenerateSummary())
-				v1.POST("/projects/summaries", handlers.Project.HandleGenerateSummaries())
+				v1.POST("/projects/:"+string(appconstant.ContextProjectID)+"/summaries", handlers.ProjectSummary.HandleGenerate())
+				v1.POST("/projects/summaries", handlers.ProjectSummary.HandleGenerateAll())
 			}
 		}
 	}

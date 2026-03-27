@@ -4,7 +4,7 @@ import (
 	"github.com/reflect-homini/stora/internal/domain/mapper"
 )
 
-func projectToResponse(p Project) ProjectResponse {
+func projectToProjectResponse(p Project) ProjectResponse {
 	return ProjectResponse{
 		BaseDTO:          mapper.BaseToDTO(p.BaseEntity),
 		UserID:           p.UserID,

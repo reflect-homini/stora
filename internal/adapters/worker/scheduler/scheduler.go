@@ -7,13 +7,13 @@ import (
 	"github.com/itsLeonB/ungerr"
 	"github.com/reflect-homini/stora/internal/core/logger"
 	"github.com/reflect-homini/stora/internal/core/otel"
-	"github.com/reflect-homini/stora/internal/domain/summary"
+	"github.com/reflect-homini/stora/internal/domain/project"
 	"github.com/reflect-homini/stora/internal/provider"
 	"github.com/robfig/cron/v3"
 )
 
 type Scheduler struct {
-	projectSummarySvc summary.ProjectSummaryService
+	projectSummarySvc project.ProjectSummaryService
 	cron              *cron.Cron
 }
 

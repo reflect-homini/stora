@@ -1,4 +1,4 @@
-package entry
+package project
 
 import (
 	"context"
@@ -11,23 +11,23 @@ import (
 	"gorm.io/gorm"
 )
 
-type Repository interface {
+type EntryRepository interface {
 	crud.Repository[Entry]
 	GetAfter(ctx context.Context, projectID, entryID uuid.UUID, limit int) ([]Entry, error)
 	GetByDateRange(ctx context.Context, projectID uuid.UUID, start time.Time, end time.Time) ([]Entry, error)
 	GetBetween(ctx context.Context, projectID, startID, endID uuid.UUID) ([]Entry, error)
 }
 
-func NewRepository(db *gorm.DB) *repository {
-	return &repository{crud.NewRepository[Entry](db)}
+func NewEntryRepository(db *gorm.DB) *entryRepository {
+	return &entryRepository{crud.NewRepository[Entry](db)}
 }
 
-type repository struct {
+type entryRepository struct {
 	crud.Repository[Entry]
 }
 
-func (r *repository) GetAfter(ctx context.Context, projectID, entryID uuid.UUID, limit int) ([]Entry, error) {
-	ctx, span := otel.Tracer.Start(ctx, "entryRepository.GetAfter")
+func (r *entryRepository) GetAfter(ctx context.Context, projectID, entryID uuid.UUID, limit int) ([]Entry, error) {
+	ctx, span := otel.Tracer.Start(ctx, "EntryRepository.GetAfter")
 	defer span.End()
 
 	db, err := r.GetGormInstance(ctx)
@@ -49,8 +49,8 @@ func (r *repository) GetAfter(ctx context.Context, projectID, entryID uuid.UUID,
 	return models, nil
 }
 
-func (r *repository) GetByDateRange(ctx context.Context, projectID uuid.UUID, start time.Time, end time.Time) ([]Entry, error) {
-	ctx, span := otel.Tracer.Start(ctx, "entryRepository.GetByDateRange")
+func (r *entryRepository) GetByDateRange(ctx context.Context, projectID uuid.UUID, start time.Time, end time.Time) ([]Entry, error) {
+	ctx, span := otel.Tracer.Start(ctx, "EntryRepository.GetByDateRange")
 	defer span.End()
 
 	db, err := r.GetGormInstance(ctx)
@@ -71,8 +71,8 @@ func (r *repository) GetByDateRange(ctx context.Context, projectID uuid.UUID, st
 	return models, nil
 }
 
-func (r *repository) GetBetween(ctx context.Context, projectID, startID, endID uuid.UUID) ([]Entry, error) {
-	ctx, span := otel.Tracer.Start(ctx, "entryRepository.GetBetween")
+func (r *entryRepository) GetBetween(ctx context.Context, projectID, startID, endID uuid.UUID) ([]Entry, error) {
+	ctx, span := otel.Tracer.Start(ctx, "EntryRepository.GetBetween")
 	defer span.End()
 
 	db, err := r.GetGormInstance(ctx)

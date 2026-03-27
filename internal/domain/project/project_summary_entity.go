@@ -1,4 +1,4 @@
-package summary
+package project
 
 import (
 	"database/sql"

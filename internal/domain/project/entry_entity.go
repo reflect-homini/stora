@@ -1,4 +1,4 @@
-package entry
+package project
 
 import (
 	"github.com/google/uuid"
