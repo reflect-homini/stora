@@ -3,6 +3,7 @@ package projectdetails
 import (
 	"context"
 	"slices"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/itsLeonB/ezutil/v2"
@@ -74,9 +75,11 @@ func (s *service) getItems(ctx context.Context, projectID uuid.UUID) ([]project.
 	// temp fix to reverse ordering
 	slices.Reverse(summaries)
 
+	now := time.Now()
+
 	items := make([]project.ProjectItem, 0, len(entries)+len(summaries))
 	for _, summary := range summaries {
-		items = append(items, summaryToItem(summary))
+		items = append(items, summaryToItem(summary, now))
 	}
 	for _, entry := range entries {
 		items = append(items, entryToItem(entry))

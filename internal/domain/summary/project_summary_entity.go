@@ -24,7 +24,6 @@ type ProjectSummary struct {
 	StartEntryID    uuid.UUID
 	EndEntryID      uuid.UUID
 	EntriesCount    int
-	TimeframeLabel  string
 	PeriodStart     time.Time
 	PeriodEnd       time.Time
 	GeneratedAt     time.Time
