@@ -14,22 +14,28 @@ import (
 )
 
 type Service interface {
+	// Public
 	Create(ctx context.Context, req NewProjectRequest) (ProjectResponse, error)
 	GetAll(ctx context.Context, userID uuid.UUID) ([]ProjectResponse, error)
-	GetByID(ctx context.Context, id, userID uuid.UUID) (ProjectResponse, error)
-	AddEntry(ctx context.Context, req entry.NewEntryRequest) (entry.EntryResponse, error)
+	AddEntry(ctx context.Context, req entry.NewRequest) (entry.Response, error)
+
+	// Internal
+	GetByID(ctx context.Context, id, userID uuid.UUID, forUpdate bool) (ProjectResponse, error)
 }
 
 type service struct {
-	repo     crud.Repository[Project]
-	entrySvc entry.Service
+	transactor crud.Transactor
+	repo       crud.Repository[Project]
+	entrySvc   entry.Service
 }
 
 func NewService(
+	transactor crud.Transactor,
 	repo crud.Repository[Project],
 	entrySvc entry.Service,
 ) *service {
 	return &service{
+		transactor,
 		repo,
 		entrySvc,
 	}
@@ -74,46 +80,40 @@ func (s *service) GetAll(ctx context.Context, userID uuid.UUID) ([]ProjectRespon
 	return ezutil.MapSlice(projects, projectToResponse), nil
 }
 
-func (s *service) GetByID(ctx context.Context, id, userID uuid.UUID) (ProjectResponse, error) {
+func (s *service) GetByID(ctx context.Context, id, userID uuid.UUID, forUpdate bool) (ProjectResponse, error) {
 	ctx, span := otel.Tracer.Start(ctx, "ProjectService.GetByID")
 	defer span.End()
 
 	spec := crud.Specification[Project]{}
 	spec.Model.ID = id
 	spec.Model.UserID = userID
-	spec.PreloadRelations = []string{"Entries"}
-	project, err := s.getBySpec(ctx, spec)
+	spec.ForUpdate = forUpdate
+
+	project, err := s.repo.FindFirst(ctx, spec)
 	if err != nil {
 		return ProjectResponse{}, err
+	}
+
+	if project.IsZero() {
+		return ProjectResponse{}, ungerr.NotFoundError("project is not found")
 	}
 
 	return projectToResponse(project), nil
 }
 
-func (s *service) AddEntry(ctx context.Context, req entry.NewEntryRequest) (entry.EntryResponse, error) {
+func (s *service) AddEntry(ctx context.Context, req entry.NewRequest) (entry.Response, error) {
 	ctx, span := otel.Tracer.Start(ctx, "ProjectService.AddEntry")
 	defer span.End()
 
-	spec := crud.Specification[Project]{}
-	spec.Model.ID = req.ProjectID
-	spec.Model.UserID = req.UserID
-	if _, err := s.getBySpec(ctx, spec); err != nil {
-		return entry.EntryResponse{}, err
-	}
+	var resp entry.Response
+	err := s.transactor.WithinTransaction(ctx, func(ctx context.Context) error {
+		if _, err := s.GetByID(ctx, req.ProjectID, req.UserID, true); err != nil {
+			return err
+		}
 
-	return s.entrySvc.Create(ctx, req)
-}
-
-func (s *service) getBySpec(ctx context.Context, spec crud.Specification[Project]) (Project, error) {
-	ctx, span := otel.Tracer.Start(ctx, "ProjectService.getBySpec")
-	defer span.End()
-
-	project, err := s.repo.FindFirst(ctx, spec)
-	if err != nil {
-		return Project{}, err
-	}
-	if project.IsZero() {
-		return Project{}, ungerr.NotFoundError("project is not found")
-	}
-	return project, nil
+		entry, err := s.entrySvc.Create(ctx, req)
+		resp = entry
+		return err
+	})
+	return resp, err
 }

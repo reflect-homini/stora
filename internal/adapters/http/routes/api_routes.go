@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/reflect-homini/stora/internal/adapters/http/handler"
+	"github.com/reflect-homini/stora/internal/core/config"
 	"github.com/reflect-homini/stora/internal/domain/appconstant"
 )
 
@@ -35,8 +36,20 @@ func RegisterAPIRoutes(router *gin.Engine, handlers *handler.Handlers, authMiddl
 					projectRoutes.POST("", handlers.Project.HandleCreate())
 					projectRoutes.GET("", handlers.Project.HandleGetAll())
 					projectRoutes.GET("/:"+string(appconstant.ContextProjectID), handlers.Project.HandleGetByID())
-					projectRoutes.POST("/:"+string(appconstant.ContextProjectID)+"/entries", handlers.Project.HandleAddEntry())
+					projectRoutes.GET("/:"+string(appconstant.ContextProjectID)+"/summaries/:"+string(appconstant.ContextSummaryID)+"/entries", handlers.Project.HandleGetSummaryEntries())
+
+					entryRoutes := projectRoutes.Group("/:" + string(appconstant.ContextProjectID) + "/entries")
+					{
+						entryRoutes.POST("", handlers.Project.HandleAddEntry())
+						entryRoutes.PUT("/:"+string(appconstant.ContextEntryID), handlers.Entry.HandleUpdateEntry())
+						entryRoutes.DELETE("/:"+string(appconstant.ContextEntryID), handlers.Entry.HandleDeleteEntry())
+					}
 				}
+			}
+
+			if config.Global.App.Env == "debug" {
+				v1.POST("/projects/:"+string(appconstant.ContextProjectID)+"/summaries", handlers.Project.HandleGenerateSummary())
+				v1.POST("/projects/summaries", handlers.Project.HandleGenerateSummaries())
 			}
 		}
 	}
