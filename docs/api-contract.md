@@ -600,6 +600,34 @@ Example:
 
 ---
 
+### Get Summary Entries
+
+#### Request
+
+**Method**: `GET`  
+**Path**: `/api/v1/projects/:projectID/summaries/:summaryID/entries`  
+**Headers**: `Authorization: Bearer <token>`
+
+#### Response
+
+**Status**: `200 OK`
+
+```json
+{
+  "data": [
+    {
+      "id": "uuid-here",
+      "createdAt": "2026-03-11T00:00:00Z",
+      "updatedAt": "2026-03-11T00:00:00Z",
+      "projectId": "uuid-here",
+      "content": "A new entry for the project"
+    }
+  ]
+}
+```
+
+---
+
 ## Data Models
 
 ### BaseDTO

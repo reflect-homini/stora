@@ -7,7 +7,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/itsLeonB/ginkgo/pkg/server"
-	"github.com/itsLeonB/ungerr"
 	"github.com/reflect-homini/stora/internal/core/logger"
 	"github.com/reflect-homini/stora/internal/domain/appconstant"
 	"github.com/reflect-homini/stora/internal/domain/entry"
@@ -114,8 +113,8 @@ func (ph *ProjectHandler) HandleGenerateSummaries() gin.HandlerFunc {
 	})
 }
 
-func (ph *ProjectHandler) HandleGetEntriesAfter() gin.HandlerFunc {
-	return server.Handler("ProjectHandler.HandleGetEntriesAfter", http.StatusOK, func(ctx *gin.Context) (any, error) {
+func (ph *ProjectHandler) HandleGetSummaryEntries() gin.HandlerFunc {
+	return server.Handler("ProjectHandler.HandleGetSummaryEntries", http.StatusOK, func(ctx *gin.Context) (any, error) {
 		userID, err := getUserID(ctx)
 		if err != nil {
 			return nil, err
@@ -126,15 +125,11 @@ func (ph *ProjectHandler) HandleGetEntriesAfter() gin.HandlerFunc {
 			return nil, err
 		}
 
-		entryID := uuid.Nil
-		entryIDStr := ctx.Query("afterEntryId")
-		if entryIDStr != "" {
-			entryID, err = uuid.Parse(entryIDStr)
-			if err != nil {
-				return nil, ungerr.Wrap(err, "error parsing entryId to uuid")
-			}
+		summaryID, err := server.GetRequiredPathParam[uuid.UUID](ctx, string(appconstant.ContextSummaryID))
+		if err != nil {
+			return nil, err
 		}
 
-		return ph.svc.GetEntriesAfter(ctx.Request.Context(), userID, projectID, entryID)
+		return ph.summarySvc.GetEntries(ctx.Request.Context(), userID, projectID, summaryID)
 	})
 }

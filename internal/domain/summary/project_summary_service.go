@@ -6,6 +6,7 @@ import (
 	"slices"
 
 	"github.com/google/uuid"
+	"github.com/itsLeonB/ezutil/v2"
 	"github.com/itsLeonB/go-crud"
 	"github.com/itsLeonB/ungerr"
 	"github.com/reflect-homini/stora/internal/core/logger"
@@ -17,6 +18,7 @@ import (
 type ProjectSummaryService interface {
 	GenerateDailySummaries(ctx context.Context) error
 	GenerateDailySummary(ctx context.Context, projectID uuid.UUID) (ProjectSummary, error)
+	GetEntries(ctx context.Context, userID, projectID, summaryID uuid.UUID) ([]entry.Response, error)
 }
 
 type projectSummaryService struct {
@@ -66,7 +68,7 @@ func (pss *projectSummaryService) GenerateDailySummary(ctx context.Context, proj
 }
 
 func (pss *projectSummaryService) GenerateDailySummaries(ctx context.Context) error {
-	ctx, span := otel.Tracer.Start(ctx, "ProjectSummaryService.GenerateDailySummary")
+	ctx, span := otel.Tracer.Start(ctx, "ProjectSummaryService.GenerateDailySummaries")
 	defer span.End()
 
 	projects, err := pss.projectRepo.FindAll(ctx, crud.Specification[project.Project]{})
@@ -100,6 +102,40 @@ func (pss *projectSummaryService) GenerateDailySummaries(ctx context.Context) er
 
 	_, err = pss.repo.InsertMany(ctx, newSummaries)
 	return err
+}
+
+func (pss *projectSummaryService) GetEntries(ctx context.Context, userID, projectID, summaryID uuid.UUID) ([]entry.Response, error) {
+	ctx, span := otel.Tracer.Start(ctx, "ProjectSummaryService.GetEntries")
+	defer span.End()
+
+	projectSpec := crud.Specification[project.Project]{}
+	projectSpec.Model.ID = projectID
+	projectSpec.Model.UserID = userID
+	project, err := pss.projectRepo.FindFirst(ctx, projectSpec)
+	if err != nil {
+		return nil, err
+	}
+	if project.IsZero() {
+		return nil, ungerr.NotFoundError(fmt.Sprintf("project ID %s is not found", projectID))
+	}
+
+	summarySpec := crud.Specification[ProjectSummary]{}
+	summarySpec.Model.ID = summaryID
+	summarySpec.Model.ProjectID = projectID
+	summary, err := pss.repo.FindFirst(ctx, summarySpec)
+	if err != nil {
+		return nil, err
+	}
+	if summary.IsZero() {
+		return nil, ungerr.NotFoundError(fmt.Sprintf("summary ID %s of project ID %s is not found", summaryID, projectID))
+	}
+
+	entries, err := pss.entryRepo.GetBetween(ctx, projectID, summary.StartEntryID, summary.EndEntryID)
+	if err != nil {
+		return nil, err
+	}
+
+	return ezutil.MapSlice(entries, entry.EntryToResponse), nil
 }
 
 func (pss *projectSummaryService) generateSummary(ctx context.Context, project project.Project) (ProjectSummary, error) {

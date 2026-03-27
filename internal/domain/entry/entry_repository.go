@@ -15,6 +15,7 @@ type Repository interface {
 	crud.Repository[Entry]
 	GetAfter(ctx context.Context, projectID, entryID uuid.UUID, limit int) ([]Entry, error)
 	GetByDateRange(ctx context.Context, projectID uuid.UUID, start time.Time, end time.Time) ([]Entry, error)
+	GetBetween(ctx context.Context, projectID, startID, endID uuid.UUID) ([]Entry, error)
 }
 
 func NewRepository(db *gorm.DB) *repository {
@@ -65,6 +66,28 @@ func (r *repository) GetByDateRange(ctx context.Context, projectID uuid.UUID, st
 		Find(&models).
 		Error; err != nil {
 		return nil, ungerr.Wrapf(err, "error querying entries between %s and %s", start, end)
+	}
+
+	return models, nil
+}
+
+func (r *repository) GetBetween(ctx context.Context, projectID, startID, endID uuid.UUID) ([]Entry, error) {
+	ctx, span := otel.Tracer.Start(ctx, "entryRepository.GetBetween")
+	defer span.End()
+
+	db, err := r.GetGormInstance(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var models []Entry
+
+	if err = db.Where("project_id", projectID).
+		Where("id BETWEEN ? AND ?", startID, endID).
+		Order("created_at").
+		Find(&models).
+		Error; err != nil {
+		return nil, ungerr.Wrapf(err, "error querying entries between %s and %s for project ID %s", startID, endID, projectID)
 	}
 
 	return models, nil

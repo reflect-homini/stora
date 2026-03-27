@@ -36,11 +36,11 @@ func RegisterAPIRoutes(router *gin.Engine, handlers *handler.Handlers, authMiddl
 					projectRoutes.POST("", handlers.Project.HandleCreate())
 					projectRoutes.GET("", handlers.Project.HandleGetAll())
 					projectRoutes.GET("/:"+string(appconstant.ContextProjectID), handlers.Project.HandleGetByID())
+					projectRoutes.GET("/:"+string(appconstant.ContextProjectID)+"/summaries/:"+string(appconstant.ContextSummaryID)+"/entries", handlers.Project.HandleGetSummaryEntries())
 
 					entryRoutes := projectRoutes.Group("/:" + string(appconstant.ContextProjectID) + "/entries")
 					{
 						entryRoutes.POST("", handlers.Project.HandleAddEntry())
-						entryRoutes.GET("", handlers.Project.HandleGetEntriesAfter())
 						entryRoutes.PUT("/:"+string(appconstant.ContextEntryID), handlers.Entry.HandleUpdateEntry())
 						entryRoutes.DELETE("/:"+string(appconstant.ContextEntryID), handlers.Entry.HandleDeleteEntry())
 					}

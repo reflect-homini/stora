@@ -10,4 +10,5 @@ const (
 
 	ContextProjectID ctxKey = "projectID"
 	ContextEntryID   ctxKey = "entryID"
+	ContextSummaryID ctxKey = "summaryID"
 )

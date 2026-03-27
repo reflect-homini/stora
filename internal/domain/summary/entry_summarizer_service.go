@@ -11,6 +11,7 @@ import (
 	"github.com/openai/openai-go/v2"
 	"github.com/openai/openai-go/v2/shared"
 	"github.com/reflect-homini/stora/internal/core/llm"
+	"github.com/reflect-homini/stora/internal/core/logger"
 	"github.com/reflect-homini/stora/internal/core/otel"
 	"github.com/reflect-homini/stora/internal/domain/entry"
 	"github.com/reflect-homini/stora/internal/domain/project"
@@ -56,6 +57,8 @@ func (es *entrySummarizer) Summarize(ctx context.Context, project project.Projec
 		return ProjectSummary{}, nil
 	}
 
+	logger.Infof("summarizing project ID %s with %d entries...", project.ID, len(entries))
+
 	startEntry := entries[0]
 	endEntry := entries[len(entries)-1]
 
@@ -66,6 +69,7 @@ func (es *entrySummarizer) Summarize(ctx context.Context, project project.Projec
 	}
 
 	summaryText, summaryMarkdown, insightsJSON := es.parseResponse(response)
+	logger.Infof("finished summarizing project ID %s", project.ID)
 
 	return ProjectSummary{
 		ProjectID:       project.ID,
@@ -121,11 +125,11 @@ func (es *entrySummarizer) responseJSONSchema() any {
 		"properties": map[string]any{
 			"summary_text": map[string]any{
 				"type":        "string",
-				"description": "A brief paragraph summarising the work done during the timeframe.",
+				"description": "A brief prose paragraph summarising the work done. Must not contain any temporal or relative-time language.",
 			},
 			"summary_markdown": map[string]any{
 				"type":        "string",
-				"description": "Markdown containing Key Themes, Progress, Challenges and Learnings sections.",
+				"description": "Markdown containing Key Themes, Progress, Challenges and Learnings sections. Must not contain any temporal or relative-time language.",
 			},
 			"insights_json": map[string]any{
 				"type":        "object",
@@ -168,18 +172,21 @@ func (es *entrySummarizer) getSystemPrompt() string {
 	return `
 You are an assistant summarizing a user's work journal.
 
-Your job is to produce a structured JSON summary of recent entries.
+Your job is to produce a structured JSON summary of the provided entries.
 
 Do not describe inactive periods.
 
 You must return a JSON object with exactly three fields:
 
 1. "summary_text"
-   A brief prose paragraph (2-4 sentences) describing the overall work done during the timeframe.
+   A brief prose paragraph (2-4 sentences) describing the work done.
    Do not use markdown here.
+   Do NOT reference time, dates, or recency (e.g. do not say "recently", "this week",
+   "in the entries", "during this period", or any similar temporal language).
 
 2. "summary_markdown"
-   A markdown string containing exactly these sections (omit a section only if there is genuinely nothing to report):
+   A markdown string containing exactly these sections (omit a section only if there
+   is genuinely nothing to report):
 
    ## Key Themes
    Bullet list of main topics.
@@ -194,6 +201,7 @@ You must return a JSON object with exactly three fields:
    Bullet list of insights gained.
 
    Do NOT include a "## Summary" section — that content belongs in "summary_text".
+   Do NOT reference time, dates, or recency anywhere in this field.
 
 3. "insights_json"
    An object with these keys (each an array of strings):
@@ -209,5 +217,8 @@ Rules:
 - Extract high-level themes instead of specific tools when possible.
 - Achievements must describe concrete work done.
 - Skills should reflect demonstrated abilities.
+- Never use temporal or relative-time language anywhere in your output (e.g. "recently",
+  "this week", "yesterday", "in recent entries", "during this period", "in March",
+  "over the past", etc.). The timeframe is provided separately by the caller.
 `
 }

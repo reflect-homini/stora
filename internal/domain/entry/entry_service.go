@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/uuid"
-	"github.com/itsLeonB/ezutil/v2"
 	"github.com/itsLeonB/go-crud"
 	"github.com/itsLeonB/ungerr"
 	"github.com/reflect-homini/stora/internal/core/otel"
@@ -13,7 +11,6 @@ import (
 
 type Service interface {
 	Create(ctx context.Context, req NewRequest) (Response, error)
-	GetAfter(ctx context.Context, projectID, entryID uuid.UUID) ([]Response, error)
 	Update(ctx context.Context, req UpdateRequest) (Response, error)
 	Delete(ctx context.Context, req DeleteRequest) error
 }
@@ -48,18 +45,6 @@ func (s *service) Create(ctx context.Context, req NewRequest) (Response, error) 
 	}
 
 	return EntryToResponse(insertedEntry), nil
-}
-
-func (s *service) GetAfter(ctx context.Context, projectID, entryID uuid.UUID) ([]Response, error) {
-	ctx, span := otel.Tracer.Start(ctx, "EntryService.GetAfter")
-	defer span.End()
-
-	entries, err := s.repo.GetAfter(ctx, projectID, entryID, -1)
-	if err != nil {
-		return nil, err
-	}
-
-	return ezutil.MapSlice(entries, EntryToResponse), nil
 }
 
 func (s *service) Update(ctx context.Context, req UpdateRequest) (Response, error) {
