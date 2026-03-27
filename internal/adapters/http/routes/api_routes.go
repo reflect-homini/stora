@@ -49,6 +49,7 @@ func RegisterAPIRoutes(router *gin.Engine, handlers *handler.Handlers, authMiddl
 
 			if config.Global.App.Env == "debug" {
 				v1.POST("/projects/:"+string(appconstant.ContextProjectID)+"/summaries", handlers.Project.HandleGenerateSummary())
+				v1.POST("/projects/summaries", handlers.Project.HandleGenerateSummaries())
 			}
 		}
 	}

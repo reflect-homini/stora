@@ -1,12 +1,14 @@
 package handler
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/itsLeonB/ginkgo/pkg/server"
 	"github.com/itsLeonB/ungerr"
+	"github.com/reflect-homini/stora/internal/core/logger"
 	"github.com/reflect-homini/stora/internal/domain/appconstant"
 	"github.com/reflect-homini/stora/internal/domain/entry"
 	"github.com/reflect-homini/stora/internal/domain/project"
@@ -98,6 +100,17 @@ func (ph *ProjectHandler) HandleGenerateSummary() gin.HandlerFunc {
 		}
 
 		return ph.summarySvc.GenerateDailySummary(ctx.Request.Context(), projectID)
+	})
+}
+
+func (ph *ProjectHandler) HandleGenerateSummaries() gin.HandlerFunc {
+	return server.Handler("ProjectHandler.HandleGenerateSummaries", http.StatusOK, func(ctx *gin.Context) (any, error) {
+		go func() {
+			if err := ph.summarySvc.GenerateDailySummaries(context.Background()); err != nil {
+				logger.Error(err)
+			}
+		}()
+		return "job launched in background", nil
 	})
 }
 
