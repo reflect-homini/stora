@@ -56,8 +56,8 @@ func (es *entrySummarizer) Summarize(ctx context.Context, project project.Projec
 		return ProjectSummary{}, nil
 	}
 
-	startEntry := entries[len(entries)-1]
-	endEntry := entries[0]
+	startEntry := entries[0]
+	endEntry := entries[len(entries)-1]
 
 	prompt := es.constructPrompt(project, entries, previousSummary)
 	response, err := es.llmSvc.Prompt(ctx, prompt)
@@ -78,6 +78,7 @@ func (es *entrySummarizer) Summarize(ctx context.Context, project project.Projec
 		EntriesCount:    len(entries),
 		PeriodStart:     startEntry.CreatedAt,
 		PeriodEnd:       endEntry.CreatedAt,
+		GeneratedAt:     time.Now(),
 	}, nil
 }
 

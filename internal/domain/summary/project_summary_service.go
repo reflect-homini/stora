@@ -3,6 +3,7 @@ package summary
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/google/uuid"
 	"github.com/itsLeonB/go-crud"
@@ -131,6 +132,7 @@ func (pss *projectSummaryService) getEntriesToSummarize(ctx context.Context, pro
 			return ProjectSummary{}, nil, err
 		}
 		if len(entries) >= 5 {
+			slices.Reverse(entries)
 			return ProjectSummary{}, entries, nil
 		}
 		logger.Infof("insufficient entries for project ID %s, entries count: %d", projectID, len(entries))
