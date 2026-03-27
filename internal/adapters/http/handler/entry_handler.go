@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/itsLeonB/ginkgo/pkg/server"
-	"github.com/reflect-homini/stora/internal/domain/appconstant"
+	"github.com/reflect-homini/stora/internal/appconstant"
 	"github.com/reflect-homini/stora/internal/domain/entry"
 	"github.com/reflect-homini/stora/internal/domain/entrymanip"
 )

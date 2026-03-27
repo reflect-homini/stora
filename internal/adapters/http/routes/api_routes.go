@@ -5,8 +5,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/reflect-homini/stora/internal/adapters/http/handler"
+	"github.com/reflect-homini/stora/internal/appconstant"
 	"github.com/reflect-homini/stora/internal/core/config"
-	"github.com/reflect-homini/stora/internal/domain/appconstant"
 )
 
 func RegisterAPIRoutes(router *gin.Engine, handlers *handler.Handlers, authMiddleware gin.HandlerFunc) {
