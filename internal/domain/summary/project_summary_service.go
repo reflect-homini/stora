@@ -86,7 +86,7 @@ func (pss *projectSummaryService) GenerateDailySummaries(ctx context.Context) er
 			logger.Errorf("error generating summary for project ID %s: %v", project.ID, err)
 			continue
 		}
-		if summary.IsZero() {
+		if summary.ProjectID == uuid.Nil || !summary.SummaryText.Valid {
 			continue
 		}
 		newSummaries = append(newSummaries, summary)
